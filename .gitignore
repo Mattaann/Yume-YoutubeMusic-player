@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.pdb
+*.log
+*.zip
+WebView2/
+settings.json
+.env
+.env.*

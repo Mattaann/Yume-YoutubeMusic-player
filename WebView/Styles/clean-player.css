@@ -1,0 +1,2 @@
+:root[data-nocturne-player] ytmusic-player-bar { opacity:0!important; height:0!important; overflow:hidden!important; pointer-events:none!important; }
+:root[data-nocturne-player] ytmusic-app { --ytmusic-player-bar-height:0px!important; }

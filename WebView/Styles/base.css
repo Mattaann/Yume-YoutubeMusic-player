@@ -1,0 +1,9 @@
+:root { color-scheme: dark; --ytmusic-background:#111213; --ytmusic-general-background-a:#111213; --ytmusic-general-background-b:#17191a; --ytmusic-brand-background-solid:#111213; }
+html, body, ytmusic-app { background:#111213!important; }
+ytmusic-nav-bar { background:#111213!important; }
+ytmusic-carousel-shelf-renderer { margin-bottom:28px; }
+ytmusic-two-row-item-renderer img { border-radius:7px; }
+ytmusic-detail-header-renderer { padding-top:20px!important; }
+ytmusic-app #guide, ytmusic-app #mini-guide { display:none!important; }
+ytmusic-app { --ytmusic-guide-width:0px!important; --ytmusic-mini-guide-width:0px!important; }
+ytmusic-nav-bar #guide-button { display:none!important; }
