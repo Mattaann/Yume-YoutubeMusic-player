@@ -1,10 +1,10 @@
-<Window x:Class="Nocturne.Views.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Window x:Class="Yume.Views.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Grid x:Name="Root" Background="#111213" RequestedTheme="Dark">
     <Grid.Resources>
       <Style TargetType="Button"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="12,10"/></Style>
     </Grid.Resources>
     <Grid.RowDefinitions><RowDefinition Height="42"/><RowDefinition Height="*"/><RowDefinition Height="110"/></Grid.RowDefinitions>
-    <Grid x:Name="TitleArea" Background="#0C0D0E"><TextBlock Text="NOCTURNE" FontSize="12" CharacterSpacing="180" Margin="22,0" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Grid>
+    <Grid x:Name="TitleArea" Background="#0C0D0E"><StackPanel Orientation="Horizontal" Margin="16,0" Spacing="10"><Image Source="/Assets/Yume.png" Width="28" Height="28"/><TextBlock Text="YUME" FontSize="12" CharacterSpacing="180" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></StackPanel></Grid>
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions><ColumnDefinition Width="184"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <Grid x:Name="SidebarSurface" Background="#0C0D0E" Padding="14,22,12,16">

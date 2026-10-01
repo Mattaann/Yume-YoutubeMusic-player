@@ -1,4 +1,4 @@
-namespace Nocturne.Models;
+namespace Yume.Models;
 public sealed record PlaybackState
 {
     public string Title { get; init; } = "Choose something to play";

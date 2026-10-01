@@ -13,9 +13,11 @@
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
+    <Product>Yume</Product>
+    <AssemblyTitle>Yume</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\Nocturne.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Yume.ico</ApplicationIcon>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <Deterministic>true</Deterministic>
@@ -27,7 +29,8 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
     <Content Include="WebView\Scripts\*.js" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="WebView\Styles\*.css" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Assets\Nocturne.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Yume.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Yume.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="PublishCompiledViews" AfterTargets="Publish">
     <ItemGroup>

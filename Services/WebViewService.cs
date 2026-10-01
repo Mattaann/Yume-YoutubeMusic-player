@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
-using Nocturne.Settings;
-using Nocturne.WebView;
-namespace Nocturne.Services;
+using Yume.Settings;
+using Yume.WebView;
+namespace Yume.Services;
 public sealed class WebViewService
 {
     private readonly WebView2 view;
@@ -77,7 +77,7 @@ public sealed class WebViewService
             var value = System.Text.Json.JsonSerializer.Serialize(settings.Current.Volume);
             var remember = settings.Current.RememberVolume ? "true" : "false";
             var body = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Scripts", "volume.js"));
-            var script = "(()=>{if(location.origin!=='https://music.youtube.com')return;" + body + ";window.__nocturneVolume.configure(" + value + "," + remember + ");})();";
+            var script = "(()=>{if(location.origin!=='https://music.youtube.com')return;" + body + ";window.__yumeVolume.configure(" + value + "," + remember + ");})();";
             var previous = volumeScriptId;
             volumeScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
             if (previous != null) core.RemoveScriptToExecuteOnDocumentCreated(previous);

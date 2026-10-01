@@ -30,7 +30,7 @@ function command(message) {
       break;
     case 'volume':
       if(Number.isFinite(value)) {
-        if(window.__nocturneVolume)window.__nocturneVolume.set(value);
+        if(window.__yumeVolume)window.__yumeVolume.set(value);
         else if(media)media.volume=Math.max(0,Math.min(value,1));
       }
       break;

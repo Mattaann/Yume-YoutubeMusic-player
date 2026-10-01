@@ -1,9 +1,9 @@
 using System.Net.Http;
-using Nocturne.Utilities;
+using Yume.Utilities;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 using Windows.UI;
-namespace Nocturne.Services;
+namespace Yume.Services;
 public sealed class ArtworkAccentService : IDisposable
 {
     private readonly HttpClient client = new(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false }) { Timeout = TimeSpan.FromSeconds(6) };

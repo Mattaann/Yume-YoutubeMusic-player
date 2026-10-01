@@ -7,7 +7,7 @@ const context={window:{},document:{querySelector:()=>({setVolume:value=>{playerV
 vm.createContext(context);
 const script=fs.readFileSync(path.join(__dirname,'../WebView/Scripts/volume.js'),'utf8');
 vm.runInContext(script,context);
-const volume=context.window.__nocturneVolume;
+const volume=context.window.__yumeVolume;
 volume.configure(0.18,true);
 assert.equal(media[0].volume,0.18);assert.equal(playerVolume,18);
 media[0].volume=1;handlers.volumechange({target:media[0]});assert.equal(media[0].volume,0.18);

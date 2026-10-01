@@ -1,4 +1,4 @@
-namespace Nocturne.Services;
+namespace Yume.Services;
 public static class NavigationPolicy
 {
     public static bool IsMusic(string address) => Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.IsDefaultPort && uri.Host == "music.youtube.com";

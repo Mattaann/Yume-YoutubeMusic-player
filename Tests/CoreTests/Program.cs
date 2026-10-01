@@ -1,5 +1,5 @@
-using Nocturne.Utilities;
-using Nocturne.Services;
+using Yume.Utilities;
+using Yume.Services;
 void Require(bool condition) { if (!condition) throw new Exception("Validation failed"); }
 Require(ArtworkPalette.Extract([]) == (184, 216, 210));
 Require(ArtworkPalette.Extract([128, 128, 128, 255]) == (184, 216, 210));

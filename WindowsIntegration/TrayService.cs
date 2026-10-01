@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-namespace Nocturne.WindowsIntegration;
+namespace Yume.WindowsIntegration;
 public sealed class TrayService : IDisposable
 {
     private const uint Callback = 0x8001;
@@ -15,7 +15,7 @@ public sealed class TrayService : IDisposable
         this.hwnd = hwnd;
         callback = WindowProc;
         if (!SetWindowSubclass(hwnd, callback, 1, 0)) throw new InvalidOperationException("Window integration unavailable.");
-        data = new NotifyIconData { Size = (uint)Marshal.SizeOf<NotifyIconData>(), Window = hwnd, Id = 1, Flags = 7, CallbackMessage = Callback, Icon = LoadImage(0, Path.Combine(AppContext.BaseDirectory, "Assets", "Nocturne.ico"), 1, 32, 32, 0x10), Tip = "Nocturne", Info = "", InfoTitle = "" };
+        data = new NotifyIconData { Size = (uint)Marshal.SizeOf<NotifyIconData>(), Window = hwnd, Id = 1, Flags = 7, CallbackMessage = Callback, Icon = LoadImage(0, Path.Combine(AppContext.BaseDirectory, "Assets", "Yume.ico"), 1, 32, 32, 0x10), Tip = "Yume", Info = "", InfoTitle = "" };
         installed = Shell_NotifyIcon(0, ref data);
         if (!installed) { DestroyIcon(data.Icon); RemoveWindowSubclass(hwnd, callback, 1); throw new InvalidOperationException("Tray unavailable."); }
     }

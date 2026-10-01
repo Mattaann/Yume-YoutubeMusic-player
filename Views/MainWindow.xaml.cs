@@ -3,12 +3,12 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Nocturne.Models;
-using Nocturne.Services;
-using Nocturne.Settings;
-using Nocturne.WindowsIntegration;
+using Yume.Models;
+using Yume.Services;
+using Yume.Settings;
+using Yume.WindowsIntegration;
 using Windows.System;
-namespace Nocturne.Views;
+namespace Yume.Views;
 public sealed partial class MainWindow : Window
 {
     private readonly SettingsService settings = new();
@@ -33,8 +33,9 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Browser = new Microsoft.UI.Xaml.Controls.WebView2();
         BrowserHost.Children.Add(Browser);
-        Title = "Nocturne";
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "Nocturne.ico"));
+        Title = "Yume";
+        try { StartupService.MigrateLegacyEntry(); } catch { }
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "Yume.ico"));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleArea);
         AppWindow.TitleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
@@ -152,7 +153,7 @@ public sealed partial class MainWindow : Window
         if (artwork != state.Artwork)
         {
             artwork = state.Artwork;
-            var uri = Nocturne.Utilities.ArtworkPolicy.GetUri(artwork);
+            var uri = Yume.Utilities.ArtworkPolicy.GetUri(artwork);
             Artwork.Source = uri == null ? null : new BitmapImage(uri);
             _ = RefreshAccentAsync();
         }
@@ -309,7 +310,7 @@ public sealed partial class MainWindow : Window
             panel.Children.Add(new TextBlock { Text = "Windows", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
             foreach (var item in new[] { minimize, topmost, startMinimized, startup }) panel.Children.Add(item);
             var version = typeof(App).Assembly.GetName().Version;
-            panel.Children.Add(new TextBlock { Text = $"Nocturne {version?.Major}.{version?.Minor}.{version?.Build} · MVP 2\nCtrl+Q: queue · Ctrl+J: lyrics\nSign-in stays within Google's pages.\nWebsite data remains in the local WebView2 profile.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
+            panel.Children.Add(new TextBlock { Text = $"Yume {version?.Major}.{version?.Minor}.{version?.Build} · MVP 2\nCtrl+Q: queue · Ctrl+J: lyrics\nSign-in stays within Google's pages.\nWebsite data remains in the local WebView2 profile.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
             var dialog = new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Settings", Content = new ScrollViewer { Content = panel }, PrimaryButtonText = "Save", CloseButtonText = "Cancel" };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             {

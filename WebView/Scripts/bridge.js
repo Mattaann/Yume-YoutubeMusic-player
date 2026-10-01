@@ -1,4 +1,4 @@
-window.__nocturne = Object.freeze({command,navigate,setContextPanel,selectQueueItem,openWebsitePanel});
+window.__yume = Object.freeze({command,navigate,setContextPanel,selectQueueItem,openWebsitePanel});
 document.addEventListener('keydown',event => {
   const typing = event.composedPath().some(el => el?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el?.tagName));
   if (event.ctrlKey && (event.key.toLowerCase() === 'k' || event.key.toLowerCase() === 'l')) {

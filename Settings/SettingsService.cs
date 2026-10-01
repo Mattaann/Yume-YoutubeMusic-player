@@ -1,5 +1,5 @@
 using System.Text.Json;
-namespace Nocturne.Settings;
+namespace Yume.Settings;
 public sealed class Preferences
 {
     public bool HideLikes { get; set; } = true;
@@ -22,7 +22,13 @@ public sealed class Preferences
 }
 public sealed class SettingsService
 {
-    public static string DataDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nocturne");
+    public static string DataDirectory { get; } = ResolveDataDirectory();
+    private static string ResolveDataDirectory()
+    {
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var legacy = Path.Combine(local, "Nocturne");
+        return Directory.Exists(legacy) ? legacy : Path.Combine(local, "Yume");
+    }
     private string FilePath => Path.Combine(DataDirectory, "settings.json");
     public Preferences Current { get; }
     public SettingsService()

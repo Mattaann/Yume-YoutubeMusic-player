@@ -1,4 +1,4 @@
-namespace Nocturne.Models;
+namespace Yume.Models;
 public sealed record QueueItem
 {
     public string Key { get; init; } = "";

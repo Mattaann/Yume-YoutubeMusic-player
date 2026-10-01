@@ -1,4 +1,4 @@
-if (!window.__nocturneVolume) {
+if (!window.__yumeVolume) {
   let desired = null;
   const clamp = value => Math.max(0, Math.min(value, 1));
   function apply(media) {
@@ -28,5 +28,5 @@ if (!window.__nocturneVolume) {
     }
   });
   observer.observe(document,{childList:true,subtree:true});
-  window.__nocturneVolume=Object.freeze({set,configure});
+  window.__yumeVolume=Object.freeze({set,configure});
 }

@@ -1,7 +1,7 @@
-using Nocturne.Models;
+using Yume.Models;
 using Windows.Media;
 using Windows.Storage.Streams;
-namespace Nocturne.WindowsIntegration;
+namespace Yume.WindowsIntegration;
 public sealed class MediaIntegrationService : IDisposable
 {
     private readonly SystemMediaTransportControls controls;

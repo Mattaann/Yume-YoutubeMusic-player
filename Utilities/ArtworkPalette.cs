@@ -1,4 +1,4 @@
-namespace Nocturne.Utilities;
+namespace Yume.Utilities;
 public static class ArtworkPalette
 {
     public static (byte R, byte G, byte B) Extract(byte[] pixels)

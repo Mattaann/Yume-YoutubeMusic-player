@@ -1,5 +1,5 @@
 using Microsoft.UI.Xaml;
-namespace Nocturne;
+namespace Yume;
 public partial class App : Application
 {
     private Views.MainWindow? window;

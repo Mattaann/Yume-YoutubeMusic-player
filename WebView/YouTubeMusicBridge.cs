@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
-using Nocturne.Models;
-using Nocturne.Services;
-using Nocturne.Settings;
-namespace Nocturne.WebView;
+using Yume.Models;
+using Yume.Services;
+using Yume.Settings;
+namespace Yume.WebView;
 public sealed class YouTubeMusicBridge
 {
     private readonly CoreWebView2 core;
@@ -47,7 +47,7 @@ public sealed class YouTubeMusicBridge
         if (!NavigationPolicy.IsMusic(core.Source)) return;
         var names = new[] { "selectors", "metadata", "controls", "navigation", "context", "observer", "bridge" };
         var body = string.Join("\n", names.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Scripts", n + ".js"))));
-        await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com'||window.__nocturne)return;" + body + "})();");
+        await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com'||window.__yume)return;" + body + "})();");
         await ApplyStylesAsync(preferences);
     }
     public async Task ApplyStylesAsync(Preferences preferences)
@@ -60,18 +60,18 @@ public sealed class YouTubeMusicBridge
         if (preferences.Theme == "Light") files.Add("light");
         if (!preferences.Animations) files.Add("no-animation");
         var css = string.Join("\n", files.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Styles", n + ".css"))));
-        if (!preferences.HideLikes) css += "\n:root[data-nocturne-player] ytmusic-player-bar{opacity:1!important;height:72px!important;pointer-events:auto!important;}:root[data-nocturne-player] ytmusic-app{--ytmusic-player-bar-height:72px!important;}";
-        await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com')return;let s=document.getElementById('nocturne-style');if(!s){s=document.createElement('style');s.id='nocturne-style';document.head.append(s);}s.textContent=" + JsonSerializer.Serialize(css) + ";})();");
+        if (!preferences.HideLikes) css += "\n:root[data-yume-player] ytmusic-player-bar{opacity:1!important;height:72px!important;pointer-events:auto!important;}:root[data-yume-player] ytmusic-app{--ytmusic-player-bar-height:72px!important;}";
+        await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com')return;let s=document.getElementById('yume-style');if(!s){s=document.createElement('style');s.id='yume-style';document.head.append(s);}s.textContent=" + JsonSerializer.Serialize(css) + ";})();");
     }
     public async Task CommandAsync(string command, double value = 0)
     {
         if (!NavigationPolicy.IsMusic(core.Source) || !double.IsFinite(value)) return;
-        await core.ExecuteScriptAsync("window.__nocturne?.command(" + JsonSerializer.Serialize(new { command, value }) + ")");
+        await core.ExecuteScriptAsync("window.__yume?.command(" + JsonSerializer.Serialize(new { command, value }) + ")");
     }
     public async Task NavigateAsync(string path)
     {
         if (!NavigationPolicy.IsMusic(core.Source)) return;
-        await core.ExecuteScriptAsync("window.__nocturne?.navigate(" + JsonSerializer.Serialize(path) + ")");
+        await core.ExecuteScriptAsync("window.__yume?.navigate(" + JsonSerializer.Serialize(path) + ")");
     }
     public async Task SetPanelAsync(string panel) => await CallAsync("setContextPanel", panel);
     public async Task SelectQueueAsync(string key) => await CallAsync("selectQueueItem", key);
@@ -79,6 +79,6 @@ public sealed class YouTubeMusicBridge
     private async Task CallAsync(string function, string argument)
     {
         if (!NavigationPolicy.IsMusic(core.Source)) return;
-        await core.ExecuteScriptAsync("window.__nocturne?." + function + "(" + JsonSerializer.Serialize(argument) + ")");
+        await core.ExecuteScriptAsync("window.__yume?." + function + "(" + JsonSerializer.Serialize(argument) + ")");
     }
 }

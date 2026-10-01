@@ -1,6 +1,6 @@
 using Microsoft.UI.Windowing;
 using Windows.Graphics;
-namespace Nocturne.WindowsIntegration;
+namespace Yume.WindowsIntegration;
 public static class WindowPlacement
 {
     public static void Restore(AppWindow window, int width, int height, int? x, int? y, int minimumWidth, int minimumHeight)

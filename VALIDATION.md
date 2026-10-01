@@ -1,5 +1,12 @@
 # Validation
 
+## Version 1.1.4
+
+- Application renamed to Yume, including executable, assembly metadata, window title, tray and settings.
+- Supplied logo packaged as a PNG and a Windows icon with 16, 24, 32, 48, 64, 128 and 256 pixel frames.
+- Existing profile directory retained for upgrades; startup registration migrates to the renamed executable.
+- Windows Release build and all JavaScript and C# regression suites pass.
+
 ## Version 1.1.3
 
 - Lyrics panel widened from 310 to 390 pixels with a dedicated scrollbar margin and disabled horizontal scrolling.

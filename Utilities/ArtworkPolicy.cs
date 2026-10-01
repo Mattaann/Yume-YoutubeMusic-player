@@ -1,4 +1,4 @@
-namespace Nocturne.Utilities;
+namespace Yume.Utilities;
 public static class ArtworkPolicy
 {
     public static Uri? GetUri(string? address)

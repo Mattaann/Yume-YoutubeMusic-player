@@ -27,7 +27,7 @@ let lastSent = 0;
 function sendState(event) {
   if (event?.type === 'timeupdate' && performance.now() - lastSent < 700) return;
   lastSent = performance.now();
-  document.documentElement?.toggleAttribute('data-nocturne-player', !!media && !!find('play') && !!find('next') && !!find('previous'));
+  document.documentElement?.toggleAttribute('data-yume-player', !!media && !!find('play') && !!find('next') && !!find('previous'));
   window.chrome.webview.postMessage({type:'state', data:snapshot()});
   if(event?.type !== 'timeupdate') refreshContextTrack();
 }

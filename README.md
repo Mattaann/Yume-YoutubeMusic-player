@@ -1,12 +1,14 @@
-# Nocturne
+# Yume
+
+![Yume logo](Assets/Yume.png)
 
 A native Windows music client built with C#, WinUI 3 and Microsoft WebView2. YouTube Music supplies the catalog, recommendations, account management and playback.
 
 ## Run and build
 
-Extract the Windows x64 release archive and launch `Nocturne.exe`. Keep the extracted files together. Microsoft Edge WebView2 Runtime is required. The application does not require administrator privileges.
+Extract the Windows x64 release archive and launch `Yume.exe`. Keep the extracted files together. Microsoft Edge WebView2 Runtime is required. The application does not require administrator privileges.
 
-To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to NuGet. Run `./build.ps1` in PowerShell. The script publishes a self-contained application into the adjacent `Nocturne-portable` directory.
+To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to NuGet. Run `./build.ps1` in PowerShell. The script publishes a self-contained application into the adjacent `Yume-portable` directory.
 
 ## Features
 
@@ -41,7 +43,9 @@ Mini player is not included.
 
 ## Data
 
-Preferences and the browser profile are stored under `Nocturne` in the current account's local application data directory. Preferences contain interface values only. Queue, lyrics, track metadata and decoded artwork remain in memory. No browser profile, credentials or personal data are included in release archives. There is no application telemetry or authentication logging. Google's website and WebView2 manage cookies and sign-in state; no scripts are injected into authentication pages.
+Preferences and the browser profile are stored under `Yume` in the current account's local application data directory. Preferences contain interface values only. Queue, lyrics, track metadata and decoded artwork remain in memory. No browser profile, credentials or personal data are included in release archives. There is no application telemetry or authentication logging. Google's website and WebView2 manage cookies and sign-in state; no scripts are injected into authentication pages.
+
+Upgrades from Nocturne reuse its existing local data directory to preserve settings and sign-in. Existing startup registration is transferred to Yume when the renamed application launches.
 
 ## Validation
 
