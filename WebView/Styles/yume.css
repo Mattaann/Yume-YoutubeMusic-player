@@ -1,0 +1,15 @@
+:root {
+  color-scheme:dark;
+  --ytmusic-background:#0d0e17;
+  --ytmusic-general-background-a:#0d0e17;
+  --ytmusic-general-background-b:#141320;
+  --ytmusic-brand-background-solid:#0d0e17;
+}
+html, body { background:#0d0e17!important; }
+ytmusic-app {
+  background:radial-gradient(ellipse at 12% 100%,rgba(123,70,205,.13),transparent 55%),radial-gradient(ellipse at 95% 100%,rgba(56,92,198,.12),transparent 55%),#0d0e17!important;
+  background-attachment:fixed!important;
+}
+ytmusic-nav-bar { background:#0d0e17!important; }
+ytmusic-browse-response, ytmusic-search-page, ytmusic-player-page, ytmusic-player-queue, ytmusic-tab-renderer { background:transparent!important; }
+ytmusic-player-bar, ytmusic-menu-popup-renderer, tp-yt-paper-dialog { background:#171522!important; }

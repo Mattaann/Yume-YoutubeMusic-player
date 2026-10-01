@@ -18,7 +18,9 @@ To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to 
 - Queue shows up to 80 loaded website entries and highlights the current track. Select an entry to play it. Opening this panel does not expand or switch the website's queue.
 - Lyrics displays the website's available lyrics. Opening it selects the website's lyrics tab. Missing lyrics show an explanatory message and access to the original panel.
 - Artwork-derived accent colors for playback controls and active panel buttons, with a neutral fallback.
-- Dark and Light themes, compact website content, animation controls, optional video and Like/Dislike presentation.
+- Dark, Light and Yume themes. Yume adds subtle violet and blue gradients over a dark base in both the native shell and website.
+- Active Queue and Lyrics buttons use a tinted background and border.
+- Compact website content, animation controls, optional video and Like/Dislike presentation.
 - Close to tray, start in tray, always on top, optional Windows startup, media keys and Windows media information.
 - Saved window size, position, volume and settings.
 - A wider lyrics panel reserves space for its scrollbar.

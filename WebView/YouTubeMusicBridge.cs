@@ -58,6 +58,7 @@ public sealed class YouTubeMusicBridge
         if (!preferences.ShowVideo) files.Add("hide-video");
         if (preferences.Compact) files.Add("compact");
         if (preferences.Theme == "Light") files.Add("light");
+        if (preferences.Theme == "Yume") files.Add("yume");
         if (!preferences.Animations) files.Add("no-animation");
         var css = string.Join("\n", files.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Styles", n + ".css"))));
         if (!preferences.HideLikes) css += "\n:root[data-yume-player] ytmusic-player-bar{opacity:1!important;height:72px!important;pointer-events:auto!important;}:root[data-yume-player] ytmusic-app{--ytmusic-player-bar-height:72px!important;}";

@@ -1,5 +1,11 @@
 # Validation
 
+## Version 1.1.5
+
+- Added a persisted Yume theme with dark violet/blue gradients in the native shell and website.
+- Active Queue and Lyrics buttons have a tinted fill and visible border in all themes.
+- Windows x64 Release build passes; visual confirmation of the new theme remains pending.
+
 ## Version 1.1.4
 
 - Application renamed to Yume, including executable, assembly metadata, window title, tray and settings.

@@ -207,8 +207,33 @@ public sealed partial class MainWindow : Window
         Root.Background = LoadingPanel.Background = background;
         PlayerSurface.Background = ContextPanel.Background = surface;
         TitleArea.Background = SidebarSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(light ? Windows.UI.Color.FromArgb(255, 237, 240, 243) : Windows.UI.Color.FromArgb(255, 12, 13, 14));
+        if (settings.Current.Theme == "Yume")
+        {
+            Root.Background = LoadingPanel.Background = CreateYumeBackground(13, 14, 23);
+            SidebarSurface.Background = ContextPanel.Background = CreateYumeBackground(15, 15, 25);
+            PlayerSurface.Background = CreateYumeBackground(19, 19, 31);
+            TitleArea.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 12, 12, 21));
+        }
         if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.IsAlwaysOnTop = settings.Current.AlwaysOnTop;
         ApplyAccent();
+    }
+    private static Microsoft.UI.Xaml.Media.LinearGradientBrush CreateYumeBackground(byte r, byte g, byte b)
+    {
+        var brush = new Microsoft.UI.Xaml.Media.LinearGradientBrush { StartPoint = new Windows.Foundation.Point(0, 0), EndPoint = new Windows.Foundation.Point(1, 1) };
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, r, g, b), Offset = 0 });
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, r, g, b), Offset = 0.5 });
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 31, 23, 48), Offset = 0.78 });
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 20, 30, 49), Offset = 1 });
+        return brush;
+    }
+    private void StylePanelButton(Button button, bool selected)
+    {
+        var color = settings.Current.Theme == "Yume" ? Windows.UI.Color.FromArgb(255, 169, 151, 245) : AccentTextColor;
+        button.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? Windows.UI.Color.FromArgb(35, color.R, color.G, color.B) : Microsoft.UI.Colors.Transparent);
+        button.BorderBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? Windows.UI.Color.FromArgb(125, color.R, color.G, color.B) : Microsoft.UI.Colors.Transparent);
+        button.BorderThickness = new Thickness(1);
+        button.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? color : InactiveColor);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(button, selected ? "Panel open" : "Panel closed");
     }
     private void ApplyAccent()
     {
@@ -224,8 +249,8 @@ public sealed partial class MainWindow : Window
         }
         ShuffleButton.Foreground = playback.ShuffleActive ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
         RepeatButton.Foreground = playback.RepeatMode > 0 ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
-        QueueButton.Foreground = panelMode == "queue" ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
-        LyricsButton.Foreground = panelMode == "lyrics" ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
+        StylePanelButton(QueueButton, panelMode == "queue");
+        StylePanelButton(LyricsButton, panelMode == "lyrics");
         UpdateNavigation(navigationPath);
     }
     private async Task RefreshAccentAsync()
@@ -295,7 +320,7 @@ public sealed partial class MainWindow : Window
             var volume = new ToggleSwitch { Header = "Remember volume", IsOn = settings.Current.RememberVolume };
             var media = new ToggleSwitch { Header = "Media key support", IsOn = settings.Current.MediaKeys };
             panel.Children.Add(new TextBlock { Text = "Appearance", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Dark", "Light" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
+            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Dark", "Light", "Yume" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
             panel.Children.Add(theme);
             var accentToggle = new ToggleSwitch { Header = "Use artwork accent colors", IsOn = settings.Current.ArtworkAccent };
             var animations = new ToggleSwitch { Header = "Website animations", IsOn = settings.Current.Animations };
