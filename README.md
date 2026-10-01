@@ -14,6 +14,7 @@ To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to 
 
 - Persistent Google session in the local WebView2 profile.
 - Native navigation, search and playback controls, including seek, volume, shuffle and repeat.
+- One native search field; the website's duplicate field is hidden. Ctrl+K and Ctrl+L focus native search from the music view.
 - Queue and Lyrics buttons in the bottom playback bar, between the timeline and volume.
 - Queue shows up to 80 loaded website entries and highlights the current track. Select an entry to play it. Opening this panel does not expand or switch the website's queue.
 - Lyrics displays the website's available lyrics. Opening it selects the website's lyrics tab. Missing lyrics show an explanatory message and access to the original panel.

@@ -64,7 +64,7 @@ public sealed partial class MainWindow : Window
         web.Ready += () =>
         {
             web.Bridge!.StateChanged += UpdatePlayer;
-            web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
+            web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key == "search") { Search.Focus(FocusState.Keyboard); Search.SelectAll(); } else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
             web.Bridge.ContextChanged += UpdateContext;
             web.Bridge.NavigationChanged += UpdateNavigation;
         };

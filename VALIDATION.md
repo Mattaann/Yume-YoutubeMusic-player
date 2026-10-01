@@ -1,5 +1,11 @@
 # Validation
 
+## Version 1.1.6
+
+- Removed the duplicate website search field while retaining the native search box.
+- Search shortcuts inside the WebView now focus the native field and suppress the website shortcut.
+- Release build and existing playback bridge regression suite pass.
+
 ## Version 1.1.5
 
 - Added a persisted Yume theme with dark violet/blue gradients in the native shell and website.

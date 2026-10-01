@@ -35,7 +35,7 @@ function command(message) {
       }
       break;
     case 'mute': if (media) media.muted = !media.muted; break;
-    case 'search': find('searchButton')?.click(); find('search')?.focus(); break;
+    case 'search': window.chrome.webview.postMessage({type:'shortcut',key:'search'}); break;
     case 'account': find('account')?.click(); break;
   }
   sendState();

@@ -7,3 +7,4 @@ ytmusic-detail-header-renderer { padding-top:20px!important; }
 ytmusic-app #guide, ytmusic-app #mini-guide { display:none!important; }
 ytmusic-app { --ytmusic-guide-width:0px!important; --ytmusic-mini-guide-width:0px!important; }
 ytmusic-nav-bar #guide-button { display:none!important; }
+ytmusic-nav-bar ytmusic-search-box, ytmusic-nav-bar #search-button { display:none!important; }

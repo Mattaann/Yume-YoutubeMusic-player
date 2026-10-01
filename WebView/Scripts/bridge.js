@@ -2,7 +2,7 @@ window.__yume = Object.freeze({command,navigate,setContextPanel,selectQueueItem,
 document.addEventListener('keydown',event => {
   const typing = event.composedPath().some(el => el?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el?.tagName));
   if (event.ctrlKey && (event.key.toLowerCase() === 'k' || event.key.toLowerCase() === 'l')) {
-    event.preventDefault(); command({command:'search'});
+    event.preventDefault(); event.stopImmediatePropagation(); command({command:'search'});
   } else if (!typing && event.code === 'Space') {
     event.preventDefault(); event.stopImmediatePropagation(); command({command:'toggle'});
   } else if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'm') {
