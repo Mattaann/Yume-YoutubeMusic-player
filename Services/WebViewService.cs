@@ -9,6 +9,8 @@ public sealed class WebViewService
     private readonly WebView2 view;
     private readonly SettingsService settings;
     private bool initializing;
+    private string? volumeScriptId;
+    private readonly SemaphoreSlim volumeScriptLock = new(1, 1);
     public YouTubeMusicBridge? Bridge { get; private set; }
     public event Action<bool, string>? Loading;
     public event Action? Ready;
@@ -28,6 +30,7 @@ public sealed class WebViewService
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.IsPasswordAutosaveEnabled = false;
             core.Settings.IsGeneralAutofillEnabled = false;
+            await UpdateVolumePreferenceAsync();
             core.NavigationStarting += (_, e) =>
             {
                 if (!NavigationPolicy.IsInternal(e.Uri)) { e.Cancel = true; OpenExternal(e.Uri); return; }
@@ -64,6 +67,24 @@ public sealed class WebViewService
         catch { Loading?.Invoke(true, "Couldn't navigate. Try again."); }
     }
     public void Retry() { if (view.CoreWebView2 != null) view.CoreWebView2.Reload(); else _ = InitializeAsync(); }
+    public async Task UpdateVolumePreferenceAsync()
+    {
+        await volumeScriptLock.WaitAsync();
+        try
+        {
+            var core = view.CoreWebView2;
+            if (core == null) return;
+            var value = System.Text.Json.JsonSerializer.Serialize(settings.Current.Volume);
+            var remember = settings.Current.RememberVolume ? "true" : "false";
+            var body = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Scripts", "volume.js"));
+            var script = "(()=>{if(location.origin!=='https://music.youtube.com')return;" + body + ";window.__nocturneVolume.configure(" + value + "," + remember + ");})();";
+            var previous = volumeScriptId;
+            volumeScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+            if (previous != null) core.RemoveScriptToExecuteOnDocumentCreated(previous);
+            if (NavigationPolicy.IsMusic(core.Source)) await core.ExecuteScriptAsync(script);
+        }
+        finally { volumeScriptLock.Release(); }
+    }
     public static void OpenExternal(string address)
     {
         if (!NavigationPolicy.CanOpenExternal(address)) return;

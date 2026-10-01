@@ -18,7 +18,7 @@ public sealed partial class MainWindow : Window
     private MediaIntegrationService? mediaIntegration;
     private bool updating = true;
     private bool exiting;
-    private bool volumeRestored;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer volumeSaveTimer;
     private bool settingsOpen;
     private string artwork = "";
     private PlaybackState playback = new();
@@ -43,6 +43,14 @@ public sealed partial class MainWindow : Window
         ApplyNativeSettings();
         Volume.Value = settings.Current.Volume;
         web = new(Browser, settings);
+        volumeSaveTimer = DispatcherQueue.CreateTimer();
+        volumeSaveTimer.Interval = TimeSpan.FromMilliseconds(250);
+        volumeSaveTimer.IsRepeating = false;
+        volumeSaveTimer.Tick += async (_, _) =>
+        {
+            settings.Save();
+            try { await web.UpdateVolumePreferenceAsync(); } catch { }
+        };
         web.Loading += (visible, message) =>
         {
             LoadingPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
@@ -90,7 +98,7 @@ public sealed partial class MainWindow : Window
             mediaIntegration.Command += action => DispatcherQueue.TryEnqueue(() => _ = CommandAsync(action));
         }
         catch { }
-        Closed += (_, _) => { exiting = true; accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
+        Closed += (_, _) => { exiting = true; volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
         AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.L, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.M, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => _ = CommandAsync("mute"));
@@ -138,7 +146,7 @@ public sealed partial class MainWindow : Window
         Progress.IsEnabled = state.Available && state.CanSeek;
         Elapsed.Text = FormatTime(state.Position);
         Remaining.Text = "−" + FormatTime(Math.Max(0, state.Duration - state.Position));
-        Volume.Value = Math.Clamp(state.Volume, 0, 1);
+        if (state.Available) Volume.Value = Math.Clamp(state.Volume, 0, 1);
         if (artwork != state.Artwork)
         {
             artwork = state.Artwork;
@@ -148,11 +156,6 @@ public sealed partial class MainWindow : Window
         }
         updating = false;
         try { mediaIntegration?.Update(state, settings.Current.WindowsMediaIntegration); } catch { }
-        if (state.Available && !volumeRestored)
-        {
-            volumeRestored = true;
-            if (settings.Current.RememberVolume) _ = CommandAsync("volume", settings.Current.Volume);
-        }
     }
     private static string FormatTime(double value) { var time = TimeSpan.FromSeconds(Math.Clamp(value, 0, 604800)); return time.TotalHours >= 1 ? time.ToString(@"h\:mm\:ss") : time.ToString(@"m\:ss"); }
     private void Navigate_Click(object sender, RoutedEventArgs e) => web.Navigate((string)((Button)sender).Tag);
@@ -166,6 +169,8 @@ public sealed partial class MainWindow : Window
     {
         if (updating) return;
         settings.Current.Volume = e.NewValue;
+        volumeSaveTimer.Stop();
+        volumeSaveTimer.Start();
         _ = CommandAsync("volume", e.NewValue);
     }
     private void Progress_Changed(object sender, RangeBaseValueChangedEventArgs e) { if (!updating) _ = CommandAsync("seek", e.NewValue); }
@@ -305,6 +310,7 @@ public sealed partial class MainWindow : Window
                 try { mediaIntegration?.Update(playback, systemMedia.IsOn); } catch { }
                 if (!settings.Save()) await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Settings", Content = "Settings apply for this session, but could not be saved. Check available disk space and folder permissions.", CloseButtonText = "OK" }.ShowAsync();
                 if (web.Bridge != null) await web.Bridge.ApplyStylesAsync(settings.Current);
+                await web.UpdateVolumePreferenceAsync();
             }
         }
         catch { }

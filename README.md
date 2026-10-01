@@ -20,6 +20,8 @@ To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to 
 - Close to tray, start in tray, always on top, optional Windows startup, media keys and Windows media information.
 - Saved window size, position, volume and settings.
 
+With Remember volume enabled, the native volume control sets the remembered level. It is saved shortly after adjustment and applied from the start of each music page, including when the website replaces its media element.
+
 Mini player is not included.
 
 ## Shortcuts
@@ -40,7 +42,7 @@ Preferences and the browser profile are stored under `Nocturne` in the current a
 
 ## Validation
 
-Run `node Tests/bridge.test.cjs`, `node Tests/context.test.cjs` and `dotnet run --project Tests/CoreTests/CoreTests.csproj`. See `VALIDATION.md` for coverage and remaining real-use checks.
+Run `node Tests/bridge.test.cjs`, `node Tests/context.test.cjs`, `node Tests/volume.test.cjs` and `dotnet run --project Tests/CoreTests/CoreTests.csproj`. See `VALIDATION.md` for coverage and remaining real-use checks.
 
 ## Limitations
 

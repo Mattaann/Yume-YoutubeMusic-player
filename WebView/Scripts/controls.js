@@ -28,7 +28,12 @@ function command(message) {
         media.currentTime = Math.max(start,Math.min(value,end));
       }
       break;
-    case 'volume': if (media && Number.isFinite(value)) media.volume = Math.max(0,Math.min(value,1)); break;
+    case 'volume':
+      if(Number.isFinite(value)) {
+        if(window.__nocturneVolume)window.__nocturneVolume.set(value);
+        else if(media)media.volume=Math.max(0,Math.min(value,1));
+      }
+      break;
     case 'mute': if (media) media.muted = !media.muted; break;
     case 'search': find('searchButton')?.click(); find('search')?.focus(); break;
     case 'account': find('account')?.click(); break;

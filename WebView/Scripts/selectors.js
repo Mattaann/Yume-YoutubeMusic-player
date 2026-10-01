@@ -2,6 +2,8 @@ const selectors = Object.freeze({
   media: 'video, audio',
   advertisement: '.html5-video-player.ad-showing, .html5-video-player.ad-interrupting',
   queue: 'ytmusic-player-queue',
+  queueRenderers: ['ytmusic-playlist-panel-video-renderer', 'ytmusic-player-queue-item-renderer', 'ytmusic-responsive-list-item-renderer', 'ytmusic-player-queue-item'],
+  queuePlay: 'ytmusic-play-button-renderer, #play-button, a[href*="watch?"]',
   queueItem: 'ytmusic-player-queue ytmusic-playlist-panel-video-renderer, ytmusic-player-queue ytmusic-player-queue-item, ytmusic-player-queue ytmusic-player-queue-item-renderer, ytmusic-player-queue ytmusic-responsive-list-item-renderer',
   queueTitle: '#song-title, #video-title, .song-title, .title, .title-column yt-formatted-string',
   queueArtist: '#byline, #byline-container, .byline, .secondary-flex-columns',

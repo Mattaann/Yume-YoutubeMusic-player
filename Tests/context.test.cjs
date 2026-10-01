@@ -7,12 +7,14 @@ const metadata={title:'First song',artist:'Artist'};
 const observers=[];
 const tabs=[0,1].map(()=>({click(){tabClicks++},hasAttribute:()=>false,getAttribute:()=>null}));
 const root={offsetHeight:100,hidden:false,getAttribute:()=>null};
-const selectors={queueItem:'rows',queueTitle:'title',queueArtist:'artist',queueDuration:'duration',playerTabs:'tabs',title:'bar-title',artist:'bar-artist'};
-const context={selectors,navigator:{mediaSession:{metadata}},document:{querySelectorAll:s=>s==='rows'?rows:tabs,querySelector:()=>null},find:key=>({playerPage:root,lyrics,advertisement:ad?{}:null})[key],requestAnimationFrame:f=>frames.push(f),MutationObserver:class{constructor(f){this.callback=f;observers.push(this)}observe(){}disconnect(){}},window:{chrome:{webview:{postMessage:m=>messages.push(m)}}}};
+const queue={getAttribute:()=>null,getClientRects:()=>[{}],querySelectorAll:s=>s==='renderers'?rows:[]};
+let queues=[queue],navigations=[];
+const selectors={queue:'queues',queueRenderers:['renderers','wrappers'],queuePlay:'play',queueTitle:'title',queueArtist:'artist',queueDuration:'duration',playerTabs:'tabs',title:'bar-title',artist:'bar-artist'};
+const context={selectors,navigator:{mediaSession:{metadata}},getComputedStyle:n=>({display:n.hidden?'none':'block'}),CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},document:{querySelectorAll:s=>s==='queues'?queues:tabs,querySelector:s=>s==='ytmusic-app'?{dispatchEvent:e=>navigations.push(e)}:null},find:key=>({playerPage:root,lyrics,advertisement:ad?{}:null})[key],requestAnimationFrame:f=>frames.push(f),MutationObserver:class{constructor(f){this.callback=f;observers.push(this)}observe(){}disconnect(){}},window:{chrome:{webview:{postMessage:m=>messages.push(m)}}}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../WebView/Scripts/context.js'),'utf8'),context);
 function flush(){while(frames.length)frames.shift()();}
-function row(title,selected=false){return {isConnected:true,contains:()=>false,hasAttribute:n=>n==='selected'&&selected,getAttribute:()=>null,querySelector:s=>({textContent:s==='title'?title:s==='artist'?'Artist':'3:00',click(){clicks++}})};}
+function row(title,selected=false){return {parentElement:queue,isConnected:true,click(){clicks++},hasAttribute:n=>n==='selected'&&selected,getAttribute:()=>null,querySelector:s=>s==='play'?null:({textContent:s==='title'?title:s==='artist'?'Artist':'3:00',click(){throw new Error('Title must not be clicked');}})};}
 context.setContextPanel('queue');flush();
 assert.equal(tabClicks,0);
 assert.match(messages.at(-1).data.message,/Start a song/);
@@ -34,4 +36,11 @@ tabs[1].hasAttribute=()=>true;context.sendContext();assert.equal(messages.at(-1)
 context.setContextPanel('');const stopped=messages.length;context.sendContext();flush();assert.equal(messages.length,stopped);
 context.selectQueueItem(key);assert.equal(clicks,1);
 rows=Array.from({length:100},(_,i)=>row('Song '+i));context.setContextPanel('queue');flush();assert.equal(messages.at(-1).data.items.length,80);
+rows=[row('Repeated song'),row('Repeated song'),row('Repeated song')];
+rows.forEach((r,i)=>r.data={navigationEndpoint:{watchEndpoint:{videoId:'same-video',playlistId:'fixture',index:i===1?0:i}}});
+queues=[queue,{getClientRects:()=>[],querySelectorAll:()=>rows}];
+context.sendContext();assert.equal(messages.at(-1).data.items.length,2);
+context.selectQueueItem(messages.at(-1).data.items[1].key);
+assert.equal(navigations.length,1);assert.equal(navigations[0].detail.endpoint.watchEndpoint.index,2);
+rows[2].hidden=true;context.sendContext();assert.equal(messages.at(-1).data.items.length,1);
 console.log('PASS: queue selection, stale rows, ads, deduplication, lyrics changes, disabled lyrics, panel closure, queue limits');

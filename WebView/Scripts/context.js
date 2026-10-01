@@ -27,10 +27,39 @@ function refreshContextTrack() {
 function textOf(root, selector, limit=300) {
   return (root?.querySelector(selector)?.textContent || '').trim().slice(0,limit);
 }
+function queueEndpoint(row) {
+  const data = row.data;
+  return data?.navigationEndpoint?.watchEndpoint ? data.navigationEndpoint
+    : data?.playlistPanelVideoRenderer?.navigationEndpoint?.watchEndpoint ? data.playlistPanelVideoRenderer.navigationEndpoint
+    : null;
+}
+function readQueueRows() {
+  const queues = [...document.querySelectorAll(selectors.queue)];
+  const candidates = queues.map(queue=>{
+    for(const selector of selectors.queueRenderers) {
+      const rows=[...queue.querySelectorAll(selector)].filter(row=>{
+        for(let node=row;node && node!==queue;node=node.parentElement) {
+          if(node.hidden || node.getAttribute('aria-hidden')==='true' || getComputedStyle(node).display==='none')return false;
+        }
+        return !!textOf(row,selectors.queueTitle);
+      });
+      if(rows.length)return {queue,rows};
+    }
+    return {queue,rows:[]};
+  });
+  candidates.sort((a,b)=>Number(b.queue.getClientRects().length>0)-Number(a.queue.getClientRects().length>0)||b.rows.length-a.rows.length);
+  const seen=new Set();
+  return (candidates[0]?.rows||[]).filter(row=>{
+    const endpoint=queueEndpoint(row)?.watchEndpoint;
+    if(!endpoint || !Number.isInteger(endpoint.index))return true;
+    const identity=JSON.stringify([endpoint.playlistId||'',endpoint.index,endpoint.videoId]);
+    if(seen.has(identity))return false;
+    seen.add(identity);return true;
+  }).slice(0,80);
+}
 function sendContext() {
   if (!contextPanel) return;
-  const allRows = [...document.querySelectorAll(selectors.queueItem)];
-  const rows = allRows.filter(row=>!allRows.some(other=>other!==row && other.contains(row))).slice(0,80);
+  const rows = readQueueRows();
   queueRows = new Map();
   const items = rows.map(row=>{
     if (!queueKeys.has(row)) queueKeys.set(row,'q'+(++queueSequence));
@@ -91,6 +120,12 @@ function selectQueueItem(key) {
   if(find('advertisement'))return;
   const row=queueRows.get(key);
   if(!row?.isConnected)return;
-  const target=row.querySelector(selectors.queueTitle)||row;
+  const endpoint=queueEndpoint(row);
+  const app=document.querySelector('ytmusic-app');
+  if(endpoint && app) {
+    app.dispatchEvent(new CustomEvent('yt-navigate',{bubbles:true,composed:true,detail:{endpoint}}));
+    return;
+  }
+  const target=row.querySelector(selectors.queuePlay)||row;
   target.click();
 }

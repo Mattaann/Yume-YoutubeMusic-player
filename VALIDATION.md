@@ -1,5 +1,13 @@
 # Validation
 
+## Version 1.1.2
+
+- Regression fixtures cover mirrored queue roots, duplicate playlist positions, intentional repeated tracks, hidden entries and playback endpoint dispatch.
+- Queue selection targets the playback endpoint or a playable control, never title text.
+- Volume fixtures cover initial restore, late website overrides, replacement media elements, player API synchronization and disabling Remember volume.
+- Volume preferences are saved after adjustment; document-start restoration replaces the former one-time restoration after media availability.
+- Windows x64 Release build passes. The user confirmed the queue and volume fixes work in the running application.
+
 ## Version 1.1.1
 
 - Windows x64 self-contained Release build, including compiled XAML and resource index.
