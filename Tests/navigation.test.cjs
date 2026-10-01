@@ -7,13 +7,13 @@ const app={get playerPageOpen(){return expanded;},hasAttribute:()=>false,getAttr
 const context={location:{pathname:'/',search:'',origin:'https://music.youtube.com'},performance:{now:()=>now},queueMicrotask:fn=>microtasks.push(fn),URL,CustomEvent:class{},document:{querySelector:()=>app,querySelectorAll:()=>[],addEventListener:(name,fn)=>handlers[name]=fn},MutationObserver:class{observe(){}disconnect(){}},find:key=>key==='playerExpand'?{click(){expanded=false;closes++;}}:null,window:{chrome:{webview:{postMessage:m=>messages.push(m)}}}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../WebView/Scripts/navigation.js'),'utf8'),context);
-context.attachNavigation();assert.equal(messages.at(-1).path,'/');
+context.attachNavigation();assert.equal(messages.filter(m=>m.type==='navigation').at(-1).path,'/');
 handlers['yt-navigate']({detail:{endpoint:{watchEndpoint:{videoId:'fixture'}}}});
 expanded=true;context.location.pathname='/watch';context.retainHomeView();
 assert.equal(closes,1);assert.equal(expanded,false);
-context.reportNavigation();assert.equal(messages.at(-1).path,'/');
+context.reportNavigation();assert.equal(messages.filter(m=>m.type==='navigation').at(-1).path,'/');
 expanded=true;context.retainHomeView();assert.equal(closes,1);
-context.location.pathname='/explore';context.reportNavigation();assert.equal(messages.at(-1).path,'/explore');
+context.location.pathname='/explore';context.reportNavigation();assert.equal(messages.filter(m=>m.type==='navigation').at(-1).path,'/explore');
 handlers['yt-navigate']({detail:{endpoint:{watchEndpoint:{videoId:'fixture'}}}});context.retainHomeView();assert.equal(closes,1);
 context.location.pathname='/';context.reportNavigation();handlers['yt-navigate']({detail:{endpoint:{watchEndpoint:{videoId:'fixture'}}}});
 context.navigate('/library');context.retainHomeView();assert.equal(closes,1);

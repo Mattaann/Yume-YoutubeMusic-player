@@ -26,7 +26,7 @@
         <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <Grid Padding="14,6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <StackPanel Orientation="Horizontal" Spacing="4"><Button Content="&#xE72B;" FontFamily="Segoe MDL2 Assets" Click="Back_Click" AutomationProperties.Name="Back"/><Button Content="&#xE72A;" FontFamily="Segoe MDL2 Assets" Click="Forward_Click" AutomationProperties.Name="Forward"/></StackPanel>
-          <TextBox x:Name="Search" Grid.Column="1" PlaceholderText="Search music · Ctrl+K" MaxWidth="460" Margin="20,4" KeyDown="Search_KeyDown"/>
+          <AutoSuggestBox x:Name="Search" Grid.Column="1" PlaceholderText="Search music · Ctrl+K" MaxWidth="460" Margin="20,4" QueryIcon="Find" TextChanged="Search_TextChanged" QuerySubmitted="Search_QuerySubmitted"/>
           <Button Grid.Column="2" Content="Account" Click="Account_Click"/>
         </Grid>
         <Grid x:Name="BrowserHost" Grid.Row="1"/>

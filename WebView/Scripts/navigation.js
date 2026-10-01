@@ -28,12 +28,16 @@ function retainHomeView() {
   if(expanded) { keepHomeUntil=0; find('playerExpand')?.click(); }
 }
 document.addEventListener('yt-navigate',event=>{
+  if(event.detail?.endpoint && !event.detail.endpoint.searchEndpoint)window.chrome.webview.postMessage({type:'shortcut',key:'clear-search'});
   if(event.detail?.endpoint?.watchEndpoint && lastBrowsePath==='/') {
     keepHomeUntil=performance.now()+5000;
     queueMicrotask(retainHomeView);
   }
 },true);
-document.addEventListener('yt-navigate-finish',()=>{retainHomeView();reportNavigation();});
+document.addEventListener('yt-navigate-finish',()=>{
+  retainHomeView();reportNavigation();
+  if(typeof location!=='undefined' && location.pathname!=='/search')window.chrome.webview.postMessage({type:'shortcut',key:'clear-search'});
+});
 let navigationApp=null;
 const navigationObserver=new MutationObserver(()=>{retainHomeView();reportNavigation();});
 function attachNavigation() {

@@ -19,6 +19,9 @@ public sealed partial class MainWindow : Window
     private bool updating = true;
     private bool exiting;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer volumeSaveTimer;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer searchTimer;
+    private bool searchSubmitted;
+    private bool searchFocused;
     private bool settingsOpen;
     private string artwork = "";
     private PlaybackState playback = new();
@@ -45,6 +48,15 @@ public sealed partial class MainWindow : Window
         ApplyNativeSettings();
         Volume.Value = settings.Current.Volume;
         web = new(Browser, settings);
+        Search.GotFocus += (_, _) => searchFocused = true;
+        Search.LostFocus += (_, _) => searchFocused = false;
+        searchTimer = DispatcherQueue.CreateTimer();
+        searchTimer.Interval = TimeSpan.FromMilliseconds(250);
+        searchTimer.IsRepeating = false;
+        searchTimer.Tick += async (_, _) =>
+        {
+            try { if (web.Bridge != null) await web.Bridge.RequestSuggestionsAsync(Search.Text); } catch { Search.ItemsSource = null; }
+        };
         volumeSaveTimer = DispatcherQueue.CreateTimer();
         volumeSaveTimer.Interval = TimeSpan.FromMilliseconds(250);
         volumeSaveTimer.IsRepeating = false;
@@ -64,7 +76,13 @@ public sealed partial class MainWindow : Window
         web.Ready += () =>
         {
             web.Bridge!.StateChanged += UpdatePlayer;
-            web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key == "search") { Search.Focus(FocusState.Keyboard); Search.SelectAll(); } else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
+            web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key == "search") Search.Focus(FocusState.Keyboard); else if (key == "clear-search") ClearSearch(); else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
+            web.Bridge.SuggestionsChanged += (query, items) =>
+            {
+                if (searchSubmitted || !string.Equals(Search.Text.Trim(), query, StringComparison.Ordinal)) return;
+                Search.ItemsSource = items;
+                Search.IsSuggestionListOpen = items.Length > 0 && searchFocused;
+            };
             web.Bridge.ContextChanged += UpdateContext;
             web.Bridge.NavigationChanged += UpdateNavigation;
         };
@@ -101,7 +119,7 @@ public sealed partial class MainWindow : Window
             mediaIntegration.Command += action => DispatcherQueue.TryEnqueue(() => _ = CommandAsync(action));
         }
         catch { }
-        Closed += (_, _) => { exiting = true; volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
+        Closed += (_, _) => { exiting = true; searchTimer.Stop(); volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
         AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.L, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.M, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => _ = CommandAsync("mute"));
@@ -163,6 +181,7 @@ public sealed partial class MainWindow : Window
     private static string FormatTime(double value) { var time = TimeSpan.FromSeconds(Math.Clamp(value, 0, 604800)); return time.TotalHours >= 1 ? time.ToString(@"h\:mm\:ss") : time.ToString(@"m\:ss"); }
     private void Navigate_Click(object sender, RoutedEventArgs e)
     {
+        ClearSearch();
         var path = (string)((Button)sender).Tag;
         UpdateNavigation(path);
         web.Navigate(path);
@@ -184,7 +203,40 @@ public sealed partial class MainWindow : Window
     private void Account_Click(object sender, RoutedEventArgs e) => _ = CommandAsync("account");
     private void Control_Click(object sender, RoutedEventArgs e) => _ = CommandAsync((string)((Button)sender).Tag);
     private void Retry_Click(object sender, RoutedEventArgs e) => web.Retry();
-    private void Search_KeyDown(object sender, KeyRoutedEventArgs e) { if (e.Key == VirtualKey.Enter && !string.IsNullOrWhiteSpace(Search.Text)) { web.Navigate("/search?q=" + Uri.EscapeDataString(Search.Text.Trim())); e.Handled = true; } }
+    private void Search_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        searchSubmitted = false;
+        searchTimer.Stop();
+        Search.ItemsSource = null;
+        Search.IsSuggestionListOpen = false;
+        if (!string.IsNullOrWhiteSpace(sender.Text)) searchTimer.Start();
+        else _ = CancelSuggestionsAsync();
+    }
+    private void Search_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var query = (args.ChosenSuggestion as string ?? args.QueryText).Trim();
+        if (query.Length == 0) return;
+        searchSubmitted = true;
+        searchTimer.Stop();
+        Search.ItemsSource = null;
+        Search.IsSuggestionListOpen = false;
+        _ = CancelSuggestionsAsync();
+        web.Navigate("/search?q=" + Uri.EscapeDataString(query));
+    }
+    private async Task CancelSuggestionsAsync()
+    {
+        try { if (web.Bridge != null) await web.Bridge.RequestSuggestionsAsync(""); } catch { }
+    }
+    private void ClearSearch()
+    {
+        searchTimer.Stop();
+        Search.Text = "";
+        Search.ItemsSource = null;
+        Search.IsSuggestionListOpen = false;
+        searchSubmitted = false;
+        _ = CancelSuggestionsAsync();
+    }
     private void Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (updating) return;
@@ -320,7 +372,7 @@ public sealed partial class MainWindow : Window
             var volume = new ToggleSwitch { Header = "Remember volume", IsOn = settings.Current.RememberVolume };
             var media = new ToggleSwitch { Header = "Media key support", IsOn = settings.Current.MediaKeys };
             panel.Children.Add(new TextBlock { Text = "Appearance", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Dark", "Light", "Yume" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
+            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Yume", "Dark", "Light" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
             panel.Children.Add(theme);
             var accentToggle = new ToggleSwitch { Header = "Use artwork accent colors", IsOn = settings.Current.ArtworkAccent };
             var animations = new ToggleSwitch { Header = "Website animations", IsOn = settings.Current.Animations };
@@ -345,7 +397,7 @@ public sealed partial class MainWindow : Window
                 settings.Current.MinimizeToTray = minimize.IsOn;
                 settings.Current.RememberVolume = volume.IsOn;
                 settings.Current.MediaKeys = media.IsOn;
-                settings.Current.Theme = theme.SelectedItem as string ?? "Dark";
+                settings.Current.Theme = theme.SelectedItem as string ?? "Yume";
                 settings.Current.ArtworkAccent = accentToggle.IsOn;
                 settings.Current.Animations = animations.IsOn;
                 settings.Current.WindowsMediaIntegration = systemMedia.IsOn;

@@ -12,6 +12,7 @@ public sealed class YouTubeMusicBridge
     public event Action<string>? Shortcut;
     public event Action<ContextState>? ContextChanged;
     public event Action<string>? NavigationChanged;
+    public event Action<string, string[]>? SuggestionsChanged;
     public YouTubeMusicBridge(CoreWebView2 core)
     {
         this.core = core;
@@ -34,6 +35,12 @@ public sealed class YouTubeMusicBridge
             }
             else if (type.GetString() == "shortcut") Shortcut?.Invoke(root.GetProperty("key").GetString() ?? "");
             else if (type.GetString() == "navigation") NavigationChanged?.Invoke(root.GetProperty("path").GetString() ?? "");
+            else if (type.GetString() == "suggestions")
+            {
+                var query = root.GetProperty("query").GetString();
+                var items = root.GetProperty("items").Deserialize<string[]>();
+                if (query is { Length: <= 200 } && items is { Length: <= 10 } && items.All(item => item is { Length: <= 200 })) SuggestionsChanged?.Invoke(query, items);
+            }
             else if (type.GetString() == "context")
             {
                 var context = root.GetProperty("data").Deserialize<ContextState>(Json);
@@ -45,7 +52,7 @@ public sealed class YouTubeMusicBridge
     public async Task InjectAsync(Preferences preferences)
     {
         if (!NavigationPolicy.IsMusic(core.Source)) return;
-        var names = new[] { "selectors", "metadata", "controls", "navigation", "context", "observer", "bridge" };
+        var names = new[] { "selectors", "metadata", "controls", "navigation", "context", "suggestions", "observer", "bridge" };
         var body = string.Join("\n", names.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Scripts", n + ".js"))));
         await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com'||window.__yume)return;" + body + "})();");
         await ApplyStylesAsync(preferences);
@@ -75,6 +82,7 @@ public sealed class YouTubeMusicBridge
         await core.ExecuteScriptAsync("window.__yume?.navigate(" + JsonSerializer.Serialize(path) + ")");
     }
     public async Task SetPanelAsync(string panel) => await CallAsync("setContextPanel", panel);
+    public async Task RequestSuggestionsAsync(string query) => await CallAsync("requestSuggestions", query);
     public async Task SelectQueueAsync(string key) => await CallAsync("selectQueueItem", key);
     public async Task OpenWebsitePanelAsync(string panel) => await CallAsync("openWebsitePanel", panel);
     private async Task CallAsync(string function, string argument)

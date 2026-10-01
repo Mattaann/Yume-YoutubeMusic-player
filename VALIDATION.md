@@ -1,5 +1,13 @@
 # Validation
 
+## Version 1.1.7
+
+- Yume is the default theme with a one-time upgrade migration.
+- Native AutoSuggestBox uses YouTube Music query suggestions, a 250 ms input debounce, cancellation and stale-response rejection.
+- Search text clears on navigation to tracks and other destinations.
+- Release build and suggestion, navigation and playback bridge regression tests pass.
+- The user confirmed live suggestions and automatic search clearing in the running application.
+
 ## Version 1.1.6
 
 - Removed the duplicate website search field while retaining the native search box.

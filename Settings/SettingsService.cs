@@ -11,7 +11,8 @@ public sealed class Preferences
     public double Volume { get; set; } = 0.7;
     public int Width { get; set; } = 1280;
     public int Height { get; set; } = 860;
-    public string Theme { get; set; } = "Dark";
+    public string Theme { get; set; } = "Yume";
+    public int ThemeDefaultsVersion { get; set; }
     public bool ArtworkAccent { get; set; } = true;
     public bool Animations { get; set; } = true;
     public bool WindowsMediaIntegration { get; set; } = true;
@@ -36,7 +37,8 @@ public sealed class SettingsService
         try { Current = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(FilePath)) ?? new(); }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { Current = new(); }
         Current.Volume = double.IsFinite(Current.Volume) ? Math.Clamp(Current.Volume, 0, 1) : 0.7;
-        Current.Theme = Current.Theme is "Light" or "Yume" ? Current.Theme : "Dark";
+        if (Current.ThemeDefaultsVersion < 1) { Current.Theme = "Yume"; Current.ThemeDefaultsVersion = 1; Save(); }
+        Current.Theme = Current.Theme is "Dark" or "Light" or "Yume" ? Current.Theme : "Yume";
     }
     public bool Save()
     {

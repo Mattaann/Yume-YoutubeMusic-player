@@ -10,7 +10,7 @@ const bar={repeatMode:'NONE',hasAttribute:()=>shuffleCalls>0,queue:{shuffle(){sh
 const nodes = {'video, audio':media,'ytmusic-player-bar #play-pause-button':{click(){clicks++;}},'ytmusic-player-bar':bar};
 const context = {console,performance:{now:()=>1000},queueMicrotask,MutationObserver:class{observe(){}disconnect(){}},navigator:{mediaSession:{metadata:{title:'Test track',artist:'Test artist',album:'Test album',artwork:[]}}},document:{body:{},querySelector:s=>nodes[s],addEventListener:(name,f)=>handlers[name]=f},window:{chrome:{webview:{postMessage:m=>messages.push(m)}}}};
 vm.createContext(context);
-vm.runInContext(['selectors','metadata','controls','navigation','context','observer','bridge'].map(n=>fs.readFileSync(path.join(folder,n+'.js'),'utf8')).join('\n'),context);
+vm.runInContext(['selectors','metadata','controls','navigation','context','suggestions','observer','bridge'].map(n=>fs.readFileSync(path.join(folder,n+'.js'),'utf8')).join('\n'),context);
 const command=context.window.__yume.command;
 assert.equal(messages.at(-1).data.title,'Test track');
 command({command:'volume',value:7}); assert.equal(media.volume,1);
