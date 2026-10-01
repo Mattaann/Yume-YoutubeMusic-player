@@ -9,7 +9,7 @@ const selectors = Object.freeze({
   playerPage: 'ytmusic-player-page',
   playerExpand: 'ytmusic-player-bar .middle-controls',
   playerTabs: 'ytmusic-player-page tp-yt-paper-tab',
-  lyrics: 'ytmusic-player-page ytmusic-description-shelf-renderer .description, ytmusic-player-page ytmusic-lyrics-renderer',
+  lyrics: 'ytmusic-player-page ytmusic-description-shelf-renderer .description, ytmusic-player-page ytmusic-lyrics-renderer, ytmusic-player-page ytmusic-synced-lyrics-renderer',
   bar: 'ytmusic-player-bar',
   title: 'ytmusic-player-bar .title',
   artist: 'ytmusic-player-bar .byline',

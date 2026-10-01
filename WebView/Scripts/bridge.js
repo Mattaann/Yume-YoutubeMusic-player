@@ -7,8 +7,6 @@ document.addEventListener('keydown',event => {
     event.preventDefault(); event.stopImmediatePropagation(); command({command:'toggle'});
   } else if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'm') {
     event.preventDefault(); command({command:'mute'});
-  } else if (event.ctrlKey && event.key.toLowerCase() === 'm') {
-    event.preventDefault(); window.chrome.webview.postMessage({type:'shortcut',key:'mini'});
   } else if (event.ctrlKey && event.key === ',') {
     event.preventDefault(); window.chrome.webview.postMessage({type:'shortcut',key:'settings'});
   } else if (event.ctrlKey && ['q','j'].includes(event.key.toLowerCase())) {

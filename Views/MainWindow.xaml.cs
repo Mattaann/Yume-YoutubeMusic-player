@@ -21,12 +21,12 @@ public sealed partial class MainWindow : Window
     private bool volumeRestored;
     private bool settingsOpen;
     private string artwork = "";
-    private MiniPlayer? mini;
     private PlaybackState playback = new();
     private string panelMode = "";
     private readonly ArtworkAccentService accents = new();
     private CancellationTokenSource? accentCancellation;
     private Windows.UI.Color accent = ArtworkAccentService.Neutral;
+    private readonly Microsoft.UI.Xaml.Media.SolidColorBrush accentBrush = new(ArtworkAccentService.Neutral);
     public MainWindow()
     {
         InitializeComponent();
@@ -54,8 +54,12 @@ public sealed partial class MainWindow : Window
         web.Ready += () =>
         {
             web.Bridge!.StateChanged += UpdatePlayer;
-            web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key == "mini") ShowMini(); else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
+            web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
             web.Bridge.ContextChanged += UpdateContext;
+        };
+        web.PageReady += async () =>
+        {
+            try { if (web.Bridge != null && panelMode.Length > 0) await web.Bridge.SetPanelAsync(panelMode); } catch { }
         };
         try
         {
@@ -70,10 +74,13 @@ public sealed partial class MainWindow : Window
         catch { settings.Current.MinimizeToTray = false; }
         AppWindow.Closing += (_, args) =>
         {
-            settings.Current.Width = AppWindow.Size.Width;
-            settings.Current.Height = AppWindow.Size.Height;
-            settings.Current.X = AppWindow.Position.X;
-            settings.Current.Y = AppWindow.Position.Y;
+            if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Restored })
+            {
+                settings.Current.Width = AppWindow.Size.Width;
+                settings.Current.Height = AppWindow.Size.Height;
+                settings.Current.X = AppWindow.Position.X;
+                settings.Current.Y = AppWindow.Position.Y;
+            }
             settings.Save();
             if (!exiting && settings.Current.MinimizeToTray && tray != null) { args.Cancel = true; AppWindow.Hide(); }
         };
@@ -83,13 +90,14 @@ public sealed partial class MainWindow : Window
             mediaIntegration.Command += action => DispatcherQueue.TryEnqueue(() => _ = CommandAsync(action));
         }
         catch { }
-        Closed += (_, _) => { exiting = true; mini?.Close(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
+        Closed += (_, _) => { exiting = true; accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
         AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.L, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.M, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => _ = CommandAsync("mute"));
-        AddShortcut(VirtualKey.M, VirtualKeyModifiers.Control, ShowMini);
         AddShortcut(VirtualKey.Q, VirtualKeyModifiers.Control, () => _ = SetPanelAsync("queue"));
         AddShortcut(VirtualKey.J, VirtualKeyModifiers.Control, () => _ = SetPanelAsync("lyrics"));
+        AddShortcut((VirtualKey)188, VirtualKeyModifiers.Control, () => _ = ShowSettingsAsync());
+        AddShortcut(VirtualKey.Escape, VirtualKeyModifiers.None, () => { if (!settingsOpen) _ = SetPanelAsync(""); });
         Root.KeyDown += (_, e) =>
         {
             if (e.Key == VirtualKey.Space && e.OriginalSource is not TextBox && e.OriginalSource is not PasswordBox && e.OriginalSource is not Button && e.OriginalSource is not Slider && e.OriginalSource is not Microsoft.UI.Xaml.Controls.WebView2)
@@ -121,8 +129,8 @@ public sealed partial class MainWindow : Window
         PlayButton.IsEnabled = state.Available;
         ShuffleButton.IsEnabled = state.Available && state.CanShuffle;
         RepeatButton.IsEnabled = state.Available && state.CanRepeat;
-        ShuffleButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.ShuffleActive ? Microsoft.UI.Colors.Aquamarine : Microsoft.UI.Colors.LightGray);
-        RepeatButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.RepeatMode > 0 ? Microsoft.UI.Colors.Aquamarine : Microsoft.UI.Colors.LightGray);
+        ShuffleButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.ShuffleActive ? accent : Microsoft.UI.Colors.LightGray);
+        RepeatButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.RepeatMode > 0 ? accent : Microsoft.UI.Colors.LightGray);
         RepeatButton.Content = state.RepeatMode == 2 ? "\uE8ED" : "\uE8EE";
         ToolTipService.SetToolTip(RepeatButton, state.RepeatMode switch { 0 => "Repeat: off", 1 => "Repeat: queue", 2 => "Repeat: current song", _ => "Cycle repeat mode" });
         Progress.Maximum = Math.Max(1, state.Duration);
@@ -134,11 +142,11 @@ public sealed partial class MainWindow : Window
         if (artwork != state.Artwork)
         {
             artwork = state.Artwork;
-            Artwork.Source = Uri.TryCreate(artwork, UriKind.Absolute, out var uri) && uri.Scheme == "https" && (uri.Host.EndsWith(".googleusercontent.com", StringComparison.Ordinal) || uri.Host.EndsWith(".ytimg.com", StringComparison.Ordinal) || uri.Host.EndsWith(".ggpht.com", StringComparison.Ordinal)) ? new BitmapImage(uri) : null;
+            var uri = Nocturne.Utilities.ArtworkPolicy.GetUri(artwork);
+            Artwork.Source = uri == null ? null : new BitmapImage(uri);
             _ = RefreshAccentAsync();
         }
         updating = false;
-        mini?.Update(state, accent);
         try { mediaIntegration?.Update(state, settings.Current.WindowsMediaIntegration); } catch { }
         if (state.Available && !volumeRestored)
         {
@@ -164,8 +172,30 @@ public sealed partial class MainWindow : Window
     private void Settings_Click(object sender, RoutedEventArgs e) => _ = ShowSettingsAsync();
     private void ApplyNativeSettings()
     {
-        Root.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(settings.Current.Theme == "Black" ? Microsoft.UI.Colors.Black : Windows.UI.Color.FromArgb(255, 17, 18, 19));
+        var black = settings.Current.Theme == "Black";
+        var background = new Microsoft.UI.Xaml.Media.SolidColorBrush(black ? Microsoft.UI.Colors.Black : Windows.UI.Color.FromArgb(255, 17, 18, 19));
+        var surface = new Microsoft.UI.Xaml.Media.SolidColorBrush(black ? Windows.UI.Color.FromArgb(255, 9, 9, 9) : Windows.UI.Color.FromArgb(255, 25, 27, 29));
+        Root.Background = LoadingPanel.Background = background;
+        PlayerSurface.Background = ContextPanel.Background = surface;
+        TitleArea.Background = SidebarSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(black ? Microsoft.UI.Colors.Black : Windows.UI.Color.FromArgb(255, 12, 13, 14));
         if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.IsAlwaysOnTop = settings.Current.AlwaysOnTop;
+        ApplyAccent();
+    }
+    private void ApplyAccent()
+    {
+        accentBrush.Color = accent;
+        var brush = accentBrush;
+        PlayButton.Background = brush;
+        foreach (var slider in new[] { Progress, Volume })
+        {
+            slider.Resources["SliderTrackValueFill"] = brush;
+            slider.Resources["SliderTrackValueFillPointerOver"] = brush;
+            slider.Resources["SliderTrackValueFillPressed"] = brush;
+        }
+        ShuffleButton.Foreground = playback.ShuffleActive ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
+        RepeatButton.Foreground = playback.RepeatMode > 0 ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
+        QueueButton.Foreground = panelMode == "queue" ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
+        LyricsButton.Foreground = panelMode == "lyrics" ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
     }
     private async Task RefreshAccentAsync()
     {
@@ -177,23 +207,9 @@ public sealed partial class MainWindow : Window
         if (token.IsCancellationRequested || exiting) return;
         accent = color;
         PlayButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(color);
-        mini?.Update(playback, color);
+        ApplyAccent();
     }
-    private void Mini_Click(object sender, RoutedEventArgs e) => ShowMini();
-    private void ShowMini()
-    {
-        if (mini == null)
-        {
-            mini = new(settings);
-            mini.Command += (command, value) => _ = CommandAsync(command, value);
-            mini.RestoreRequested += RestoreMain;
-            mini.Closed += (_, _) => { mini = null; if (!exiting) { AppWindow.Show(); Activate(); } };
-        }
-        mini.Update(playback, accent);
-        mini.Activate();
-        AppWindow.Hide();
-    }
-    private void RestoreMain() { mini?.Close(); AppWindow.Show(); Activate(); }
+    private void RestoreMain() { AppWindow.Show(); Activate(); }
     private void Queue_Click(object sender, RoutedEventArgs e) => _ = SetPanelAsync("queue");
     private void Lyrics_Click(object sender, RoutedEventArgs e) => _ = SetPanelAsync("lyrics");
     private void ClosePanel_Click(object sender, RoutedEventArgs e) => _ = SetPanelAsync("");
@@ -206,7 +222,14 @@ public sealed partial class MainWindow : Window
         QueueList.Visibility = panelMode == "queue" ? Visibility.Visible : Visibility.Collapsed;
         LyricsScroll.Visibility = panelMode == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
         QueueList.ItemsSource = null; LyricsText.Text = ""; ContextMessage.Text = "Loading…";
-        try { if (web.Bridge != null) await web.Bridge.SetPanelAsync(panelMode); } catch { ContextMessage.Text = "Open YouTube Music to view this content."; }
+        ContextMessage.Visibility = Visibility.Visible;
+        ApplyAccent();
+        try
+        {
+            if (web.Bridge != null && NavigationPolicy.IsMusic(Browser.CoreWebView2.Source)) await web.Bridge.SetPanelAsync(panelMode);
+            else ContextMessage.Text = "Open YouTube Music and choose a song to see this content.";
+        }
+        catch { ContextMessage.Text = "Open YouTube Music to view this content."; }
     }
     private void UpdateContext(ContextState context)
     {
@@ -214,6 +237,7 @@ public sealed partial class MainWindow : Window
         QueueList.ItemsSource = context.Items;
         LyricsText.Text = context.Lyrics;
         ContextMessage.Text = context.Message;
+        ContextMessage.Visibility = string.IsNullOrEmpty(context.Message) ? Visibility.Collapsed : Visibility.Visible;
     }
     private async void Queue_ItemClick(object sender, ItemClickEventArgs e)
     {
@@ -238,7 +262,7 @@ public sealed partial class MainWindow : Window
             var minimize = new ToggleSwitch { Header = "Close to system tray", IsOn = settings.Current.MinimizeToTray, IsEnabled = tray != null };
             var volume = new ToggleSwitch { Header = "Remember volume", IsOn = settings.Current.RememberVolume };
             var media = new ToggleSwitch { Header = "Media key support", IsOn = settings.Current.MediaKeys };
-            foreach (var item in new[] { likes, video, compact, minimize, volume, media }) panel.Children.Add(item);
+            panel.Children.Add(new TextBlock { Text = "Appearance", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
             var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Dark", "Black" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
             panel.Children.Add(theme);
             var accentToggle = new ToggleSwitch { Header = "Use artwork accent colors", IsOn = settings.Current.ArtworkAccent };
@@ -248,9 +272,13 @@ public sealed partial class MainWindow : Window
             var startMinimized = new ToggleSwitch { Header = "Start in system tray", IsOn = settings.Current.StartMinimized, IsEnabled = tray != null };
             var startupEnabled = StartupService.IsEnabled();
             var startup = new ToggleSwitch { Header = "Start with Windows", IsOn = startupEnabled };
-            foreach (var item in new[] { accentToggle, animations, systemMedia, topmost, startMinimized, startup }) panel.Children.Add(item);
+            foreach (var item in new[] { accentToggle, animations, compact, likes, video }) panel.Children.Add(item);
+            panel.Children.Add(new TextBlock { Text = "Playback", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+            foreach (var item in new[] { volume, media, systemMedia }) panel.Children.Add(item);
+            panel.Children.Add(new TextBlock { Text = "Windows", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+            foreach (var item in new[] { minimize, topmost, startMinimized, startup }) panel.Children.Add(item);
             var version = typeof(App).Assembly.GetName().Version;
-            panel.Children.Add(new TextBlock { Text = $"Nocturne {version?.Major}.{version?.Minor}.{version?.Build} · MVP 2\nCtrl+M: mini player · Ctrl+Q: queue · Ctrl+J: lyrics\nSign-in stays within Google's pages.\nWebsite data remains in the local WebView2 profile.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
+            panel.Children.Add(new TextBlock { Text = $"Nocturne {version?.Major}.{version?.Minor}.{version?.Build} · MVP 2\nCtrl+Q: queue · Ctrl+J: lyrics\nSign-in stays within Google's pages.\nWebsite data remains in the local WebView2 profile.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
             var dialog = new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Settings", Content = new ScrollViewer { Content = panel }, PrimaryButtonText = "Save", CloseButtonText = "Cancel" };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             {
@@ -274,7 +302,8 @@ public sealed partial class MainWindow : Window
                 ApplyNativeSettings();
                 _ = RefreshAccentAsync();
                 if (tray != null) tray.MediaKeys = media.IsOn;
-                if (!settings.Save()) LoadingText.Text = "Settings could not be saved.";
+                try { mediaIntegration?.Update(playback, systemMedia.IsOn); } catch { }
+                if (!settings.Save()) await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Settings", Content = "Settings apply for this session, but could not be saved. Check available disk space and folder permissions.", CloseButtonText = "OK" }.ShowAsync();
                 if (web.Bridge != null) await web.Bridge.ApplyStylesAsync(settings.Current);
             }
         }

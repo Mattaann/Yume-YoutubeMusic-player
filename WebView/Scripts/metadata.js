@@ -29,4 +29,5 @@ function sendState(event) {
   lastSent = performance.now();
   document.documentElement?.toggleAttribute('data-nocturne-player', !!media && !!find('play') && !!find('next') && !!find('previous'));
   window.chrome.webview.postMessage({type:'state', data:snapshot()});
+  if(event?.type !== 'timeupdate') refreshContextTrack();
 }

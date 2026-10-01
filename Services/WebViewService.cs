@@ -12,6 +12,7 @@ public sealed class WebViewService
     public YouTubeMusicBridge? Bridge { get; private set; }
     public event Action<bool, string>? Loading;
     public event Action? Ready;
+    public event Action? PageReady;
     public WebViewService(WebView2 view, SettingsService settings) { this.view = view; this.settings = settings; }
     public async Task InitializeAsync()
     {
@@ -45,7 +46,7 @@ public sealed class WebViewService
             core.NavigationCompleted += async (_, e) =>
             {
                 if (!e.IsSuccess) { Loading?.Invoke(true, "Can't connect to YouTube Music"); return; }
-                try { await Bridge.InjectAsync(settings.Current); Loading?.Invoke(false, ""); }
+                try { await Bridge.InjectAsync(settings.Current); Loading?.Invoke(false, ""); PageReady?.Invoke(); }
                 catch { Loading?.Invoke(true, "Couldn't initialize the player. Try again."); }
             };
             core.Navigate("https://music.youtube.com");

@@ -1,0 +1,37 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+let messages=[], rows=[], lyrics=null, ad=false, clicks=0, frames=[], tabClicks=0;
+const metadata={title:'First song',artist:'Artist'};
+const observers=[];
+const tabs=[0,1].map(()=>({click(){tabClicks++},hasAttribute:()=>false,getAttribute:()=>null}));
+const root={offsetHeight:100,hidden:false,getAttribute:()=>null};
+const selectors={queueItem:'rows',queueTitle:'title',queueArtist:'artist',queueDuration:'duration',playerTabs:'tabs',title:'bar-title',artist:'bar-artist'};
+const context={selectors,navigator:{mediaSession:{metadata}},document:{querySelectorAll:s=>s==='rows'?rows:tabs,querySelector:()=>null},find:key=>({playerPage:root,lyrics,advertisement:ad?{}:null})[key],requestAnimationFrame:f=>frames.push(f),MutationObserver:class{constructor(f){this.callback=f;observers.push(this)}observe(){}disconnect(){}},window:{chrome:{webview:{postMessage:m=>messages.push(m)}}}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../WebView/Scripts/context.js'),'utf8'),context);
+function flush(){while(frames.length)frames.shift()();}
+function row(title,selected=false){return {isConnected:true,contains:()=>false,hasAttribute:n=>n==='selected'&&selected,getAttribute:()=>null,querySelector:s=>({textContent:s==='title'?title:s==='artist'?'Artist':'3:00',click(){clicks++}})};}
+context.setContextPanel('queue');flush();
+assert.equal(tabClicks,0);
+assert.match(messages.at(-1).data.message,/Start a song/);
+rows=[row('First song',true),row('Second song')];
+context.sendContext();
+assert.equal(messages.at(-1).data.items.length,2);
+assert.equal(messages.at(-1).data.items[0].selected,true);
+const key=messages.at(-1).data.items[1].key;
+context.selectQueueItem(key);assert.equal(clicks,1);
+ad=true;context.selectQueueItem(key);assert.equal(clicks,1);ad=false;
+rows[1].isConnected=false;context.selectQueueItem(key);assert.equal(clicks,1);
+const count=messages.length;context.sendContext();assert.equal(messages.length,count);
+lyrics={innerText:'Fixture verse'};
+context.setContextPanel('lyrics');flush();assert.equal(messages.at(-1).data.lyrics,'Fixture verse');
+assert.equal(tabClicks,1);
+metadata.title='Second song';context.refreshContextTrack();flush();assert.equal(messages.at(-1).data.lyrics,'');
+lyrics.innerText='New fixture verse';context.sendContext();assert.equal(messages.at(-1).data.lyrics,'New fixture verse');
+tabs[1].hasAttribute=()=>true;context.sendContext();assert.equal(messages.at(-1).data.lyrics,'');
+context.setContextPanel('');const stopped=messages.length;context.sendContext();flush();assert.equal(messages.length,stopped);
+context.selectQueueItem(key);assert.equal(clicks,1);
+rows=Array.from({length:100},(_,i)=>row('Song '+i));context.setContextPanel('queue');flush();assert.equal(messages.at(-1).data.items.length,80);
+console.log('PASS: queue selection, stale rows, ads, deduplication, lyrics changes, disabled lyrics, panel closure, queue limits');

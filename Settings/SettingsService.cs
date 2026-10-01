@@ -19,11 +19,6 @@ public sealed class Preferences
     public bool AlwaysOnTop { get; set; }
     public int? X { get; set; }
     public int? Y { get; set; }
-    public int MiniWidth { get; set; } = 420;
-    public int MiniHeight { get; set; } = 252;
-    public int? MiniX { get; set; }
-    public int? MiniY { get; set; }
-    public bool MiniAlwaysOnTop { get; set; } = true;
 }
 public sealed class SettingsService
 {
@@ -34,6 +29,8 @@ public sealed class SettingsService
     {
         try { Current = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(FilePath)) ?? new(); }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { Current = new(); }
+        Current.Volume = double.IsFinite(Current.Volume) ? Math.Clamp(Current.Volume, 0, 1) : 0.7;
+        Current.Theme = Current.Theme == "Black" ? "Black" : "Dark";
     }
     public bool Save()
     {

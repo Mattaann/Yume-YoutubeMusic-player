@@ -1,43 +1,53 @@
 # Nocturne
 
-Current snapshot: 1.1.0 preview. Includes work in progress on mini player, queue, lyrics, artwork accents and additional settings. The Windows build succeeds, but these additions have not completed interactive validation. The MVP 1 description below records the earlier baseline.
-
 A native Windows music client built with C#, WinUI 3 and Microsoft WebView2. YouTube Music supplies the catalog, recommendations, account management and playback.
 
-## Build
+## Run and build
 
-Requires Windows 10 version 2004 or later, an x64 .NET 8 SDK, and access to NuGet. Run `./build.ps1` in PowerShell. The script publishes a self-contained application into the adjacent `Nocturne-portable` directory. Keep that entire directory together and launch `Nocturne.exe`. Microsoft Edge WebView2 Runtime must be installed. No administrator privileges are required by the application.
+Extract the Windows x64 release archive and launch `Nocturne.exe`. Keep the extracted files together. Microsoft Edge WebView2 Runtime is required. The application does not require administrator privileges.
 
-## MVP 1
+To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to NuGet. Run `./build.ps1` in PowerShell. The script publishes a self-contained application into the adjacent `Nocturne-portable` directory.
 
-- Persistent WebView2 profile; native navigation, search, settings and playback bar.
-- Playback metadata, play/pause, previous/next, seek, volume and mute.
-- Optional shuffle and repeat commands delegated to the website.
-- Dark styling, hidden likes by default, optional video presentation.
-- Tray menu with open, playback controls and exit; close-to-tray enabled by default.
-- Windows media transport controls and media keyboard integration.
-- Loading and retry screens, external links opened in the default browser.
+## Features
 
-Ctrl+K or Ctrl+L focuses search. Enter searches YouTube Music. Space toggles playback in the website when focus is not inside an editable field. Ctrl+Shift+M toggles mute. Ctrl+, opens settings from the website.
+- Persistent Google session in the local WebView2 profile.
+- Native navigation, search and playback controls, including seek, volume, shuffle and repeat.
+- Queue and Lyrics buttons in the bottom playback bar, between the timeline and volume.
+- Queue shows up to 80 loaded website entries and highlights the current track. Select an entry to play it. Opening this panel does not expand or switch the website's queue.
+- Lyrics displays the website's available lyrics. Opening it selects the website's lyrics tab. Missing lyrics show an explanatory message and access to the original panel.
+- Artwork-derived accent colors for playback controls and active panel buttons, with a neutral fallback.
+- Dark and Black themes, compact website content, animation controls, optional video and Like/Dislike presentation.
+- Close to tray, start in tray, always on top, optional Windows startup, media keys and Windows media information.
+- Saved window size, position, volume and settings.
+
+Mini player is not included.
+
+## Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| Ctrl+K / Ctrl+L | Search |
+| Space | Play/pause outside editable fields |
+| Ctrl+Shift+M | Mute |
+| Ctrl+Q | Toggle queue |
+| Ctrl+J | Toggle lyrics |
+| Ctrl+, | Settings |
+| Escape | Close the side panel when native controls have focus |
 
 ## Data
 
-Preferences and the browser profile are stored in the current Windows account's local application data directory under `Nocturne`. Preferences contain only interface values, window dimensions and volume. Track metadata exists only in memory. There is no application telemetry, account export or authentication logging. Google's website and WebView2 manage cookies and sign-in state. No scripts are injected into authentication pages. The client does not bypass subscription restrictions.
+Preferences and the browser profile are stored under `Nocturne` in the current account's local application data directory. Preferences contain interface values only. Queue, lyrics, track metadata and decoded artwork remain in memory. No browser profile, credentials or personal data are included in release archives. There is no application telemetry or authentication logging. Google's website and WebView2 manage cookies and sign-in state; no scripts are injected into authentication pages.
 
-## Scope and limitations
+## Validation
 
-This is an MVP implementation, not a completed or certified music client. Google can refuse sign-in from embedded browsers. No user-agent spoofing, cookie imports or authentication workarounds are included. Website selector changes can affect playback commands or metadata; selectors are centralized in `WebView/Scripts/selectors.js`. Authentication popups navigate within the same WebView, so flows requiring an opener may not work. Account management remains in Google's interface. Restoring Like/Dislike also restores the website's player bar so those controls remain accessible.
+Run `node Tests/bridge.test.cjs`, `node Tests/context.test.cjs` and `dotnet run --project Tests/CoreTests/CoreTests.csproj`. See `VALIDATION.md` for coverage and remaining real-use checks.
 
-Home recommendations and library layouts use the website's own content. The website's header remains available for search and account access. Native navigation uses website links or YouTube Music's internal navigation event. Queue, lyrics, mini player, artwork accents, startup registration, complete theme options and data-clearing UI are deferred to MVP 2. Audio-only stream selection is not implemented; hiding video changes presentation only. Window position restoration is not yet implemented. Media control behavior must be verified with actual playback and the system's other media applications.
+## Limitations
 
-The application has no updater. Version information is set in the project file. Distribution builds are unsigned.
+This is an unsigned preview build with no installer or automatic updater. Google may refuse embedded-browser sign-in. The app does not bypass subscription restrictions or implement an audio-only stream mode. Hiding video changes presentation only.
+
+Queue and lyrics depend on YouTube Music's loaded content and DOM structure. The queue is not a full editable replacement: reorder and removal remain available through the original website. Lyrics availability depends on the track; timed line highlighting is not implemented. Website changes may require updating the centralized selectors. Account management remains on Google's pages. Restoring Like/Dislike also restores the original player bar.
 
 ## Structure
 
-`Views` contains the native shell. `Services` handles navigation and WebView lifecycle. `WebView` owns the bridge, selectors, event observers and modular stylesheets. `WindowsIntegration` owns the system tray and media transport controls. `Settings` persists non-sensitive preferences.
-
-## References
-
-- [WebView2 in WinUI 3](https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/webview2)
-- [Unpackaged WinUI applications](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/unpackage-winui-app)
-- [Desktop media transport controls](https://learn.microsoft.com/en-us/windows/win32/api/systemmediatransportcontrolsinterop/nf-systemmediatransportcontrolsinterop-isystemmediatransportcontrolsinterop-getforwindow)
+`Views` contains the native shell. `Services` handles WebView lifecycle and artwork accents. `WebView` contains the bridge, selectors, observers and stylesheets. `WindowsIntegration` handles the system tray, startup, window placement and media transport controls. `Settings` persists preferences. `Tests` contains deterministic regression checks.
