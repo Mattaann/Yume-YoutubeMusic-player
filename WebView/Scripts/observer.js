@@ -2,6 +2,7 @@ const events = ['play','pause','ended','durationchange','loadedmetadata','timeup
 let observedBar = null;
 const metadataObserver = new MutationObserver(() => sendState());
 function attach() {
+  attachNavigation();
   attachContext();
   const next = find('media');
   if (next !== media) {

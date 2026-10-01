@@ -60,12 +60,20 @@ function readQueueRows() {
 function sendContext() {
   if (!contextPanel) return;
   const rows = readQueueRows();
+  const player=document.querySelector('#movie_player');
+  const currentId=player?.getVideoData?.()?.video_id;
+  let selectedIndex=rows.findIndex(row=>row.selected===true || (row.hasAttribute('selected') && row.getAttribute('selected')!=='false') || row.getAttribute('aria-current')==='true');
+  if(selectedIndex<0 && currentId)selectedIndex=rows.findIndex(row=>queueEndpoint(row)?.watchEndpoint?.videoId===currentId);
+  if(selectedIndex<0) {
+    const metadata=navigator.mediaSession?.metadata;
+    selectedIndex=rows.findIndex(row=>textOf(row,selectors.queueTitle)===metadata?.title && textOf(row,selectors.queueArtist).includes(metadata?.artist||'\0'));
+  }
   queueRows = new Map();
-  const items = rows.map(row=>{
+  const items = rows.map((row,index)=>{
     if (!queueKeys.has(row)) queueKeys.set(row,'q'+(++queueSequence));
     const key=queueKeys.get(row);
     queueRows.set(key,row);
-    return {key,title:textOf(row,selectors.queueTitle),artist:textOf(row,selectors.queueArtist),duration:textOf(row,selectors.queueDuration,30),selected:row.hasAttribute('selected')||row.getAttribute('aria-current')==='true'};
+    return {key,title:textOf(row,selectors.queueTitle),artist:textOf(row,selectors.queueArtist),duration:textOf(row,selectors.queueDuration,30),selected:index===selectedIndex};
   }).filter(item=>item.title);
   const lyricsNode = find('lyrics');
   const lyricsText = (lyricsNode?.innerText || '').trim().slice(0,20000);
@@ -101,6 +109,7 @@ function attachContext() {
   }
 }
 function openWebsitePanel(panel) {
+  if(typeof keepHomeUntil!=='undefined')keepHomeUntil=0;
   const page=find('playerPage');
   const bar=find('bar');
   if(page && (bar?.playerPageOpen === false || page.hidden || !page.offsetHeight || page.getAttribute('player-page-open')==='false'))find('playerExpand')?.click();

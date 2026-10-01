@@ -23,6 +23,7 @@ public sealed partial class MainWindow : Window
     private string artwork = "";
     private PlaybackState playback = new();
     private string panelMode = "";
+    private string navigationPath = "/";
     private readonly ArtworkAccentService accents = new();
     private CancellationTokenSource? accentCancellation;
     private Windows.UI.Color accent = ArtworkAccentService.Neutral;
@@ -64,6 +65,7 @@ public sealed partial class MainWindow : Window
             web.Bridge!.StateChanged += UpdatePlayer;
             web.Bridge.Shortcut += key => { if (key == "settings") _ = ShowSettingsAsync(); else if (key is "queue" or "lyrics") _ = SetPanelAsync(key); };
             web.Bridge.ContextChanged += UpdateContext;
+            web.Bridge.NavigationChanged += UpdateNavigation;
         };
         web.PageReady += async () =>
         {
@@ -137,8 +139,8 @@ public sealed partial class MainWindow : Window
         PlayButton.IsEnabled = state.Available;
         ShuffleButton.IsEnabled = state.Available && state.CanShuffle;
         RepeatButton.IsEnabled = state.Available && state.CanRepeat;
-        ShuffleButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.ShuffleActive ? accent : Microsoft.UI.Colors.LightGray);
-        RepeatButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.RepeatMode > 0 ? accent : Microsoft.UI.Colors.LightGray);
+        ShuffleButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.ShuffleActive ? AccentTextColor : InactiveColor);
+        RepeatButton.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(state.RepeatMode > 0 ? AccentTextColor : InactiveColor);
         RepeatButton.Content = state.RepeatMode == 2 ? "\uE8ED" : "\uE8EE";
         ToolTipService.SetToolTip(RepeatButton, state.RepeatMode switch { 0 => "Repeat: off", 1 => "Repeat: queue", 2 => "Repeat: current song", _ => "Cycle repeat mode" });
         Progress.Maximum = Math.Max(1, state.Duration);
@@ -158,7 +160,24 @@ public sealed partial class MainWindow : Window
         try { mediaIntegration?.Update(state, settings.Current.WindowsMediaIntegration); } catch { }
     }
     private static string FormatTime(double value) { var time = TimeSpan.FromSeconds(Math.Clamp(value, 0, 604800)); return time.TotalHours >= 1 ? time.ToString(@"h\:mm\:ss") : time.ToString(@"m\:ss"); }
-    private void Navigate_Click(object sender, RoutedEventArgs e) => web.Navigate((string)((Button)sender).Tag);
+    private void Navigate_Click(object sender, RoutedEventArgs e)
+    {
+        var path = (string)((Button)sender).Tag;
+        UpdateNavigation(path);
+        web.Navigate(path);
+    }
+    private void UpdateNavigation(string path)
+    {
+        navigationPath = path;
+        foreach (var button in NavigationItems.Children.OfType<Button>())
+        {
+            var selected = (string)button.Tag == path;
+            button.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? Windows.UI.Color.FromArgb(45, accent.R, accent.G, accent.B) : Microsoft.UI.Colors.Transparent);
+            button.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? AccentTextColor : InactiveColor);
+            button.FontWeight = selected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(button, selected ? "Current page" : "");
+        }
+    }
     private void Back_Click(object sender, RoutedEventArgs e) { if (Browser.CoreWebView2?.CanGoBack == true) Browser.CoreWebView2.GoBack(); }
     private void Forward_Click(object sender, RoutedEventArgs e) { if (Browser.CoreWebView2?.CanGoForward == true) Browser.CoreWebView2.GoForward(); }
     private void Account_Click(object sender, RoutedEventArgs e) => _ = CommandAsync("account");
@@ -175,14 +194,18 @@ public sealed partial class MainWindow : Window
     }
     private void Progress_Changed(object sender, RangeBaseValueChangedEventArgs e) { if (!updating) _ = CommandAsync("seek", e.NewValue); }
     private void Settings_Click(object sender, RoutedEventArgs e) => _ = ShowSettingsAsync();
+    private Windows.UI.Color InactiveColor => settings.Current.Theme == "Light" ? Windows.UI.Color.FromArgb(255, 45, 50, 56) : Microsoft.UI.Colors.LightGray;
+    private Windows.UI.Color AccentTextColor => settings.Current.Theme == "Light" ? Windows.UI.Color.FromArgb(255, (byte)(accent.R * 0.42), (byte)(accent.G * 0.42), (byte)(accent.B * 0.42)) : accent;
     private void ApplyNativeSettings()
     {
-        var black = settings.Current.Theme == "Black";
-        var background = new Microsoft.UI.Xaml.Media.SolidColorBrush(black ? Microsoft.UI.Colors.Black : Windows.UI.Color.FromArgb(255, 17, 18, 19));
-        var surface = new Microsoft.UI.Xaml.Media.SolidColorBrush(black ? Windows.UI.Color.FromArgb(255, 9, 9, 9) : Windows.UI.Color.FromArgb(255, 25, 27, 29));
+        var light = settings.Current.Theme == "Light";
+        Root.RequestedTheme = light ? ElementTheme.Light : ElementTheme.Dark;
+        AppWindow.TitleBar.ButtonForegroundColor = light ? Microsoft.UI.Colors.Black : Microsoft.UI.Colors.LightGray;
+        var background = new Microsoft.UI.Xaml.Media.SolidColorBrush(light ? Windows.UI.Color.FromArgb(255, 247, 248, 250) : Windows.UI.Color.FromArgb(255, 17, 18, 19));
+        var surface = new Microsoft.UI.Xaml.Media.SolidColorBrush(light ? Microsoft.UI.Colors.White : Windows.UI.Color.FromArgb(255, 25, 27, 29));
         Root.Background = LoadingPanel.Background = background;
         PlayerSurface.Background = ContextPanel.Background = surface;
-        TitleArea.Background = SidebarSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(black ? Microsoft.UI.Colors.Black : Windows.UI.Color.FromArgb(255, 12, 13, 14));
+        TitleArea.Background = SidebarSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(light ? Windows.UI.Color.FromArgb(255, 237, 240, 243) : Windows.UI.Color.FromArgb(255, 12, 13, 14));
         if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.IsAlwaysOnTop = settings.Current.AlwaysOnTop;
         ApplyAccent();
     }
@@ -190,6 +213,7 @@ public sealed partial class MainWindow : Window
     {
         accentBrush.Color = accent;
         var brush = accentBrush;
+        var textBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(AccentTextColor);
         PlayButton.Background = brush;
         foreach (var slider in new[] { Progress, Volume })
         {
@@ -197,10 +221,11 @@ public sealed partial class MainWindow : Window
             slider.Resources["SliderTrackValueFillPointerOver"] = brush;
             slider.Resources["SliderTrackValueFillPressed"] = brush;
         }
-        ShuffleButton.Foreground = playback.ShuffleActive ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
-        RepeatButton.Foreground = playback.RepeatMode > 0 ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
-        QueueButton.Foreground = panelMode == "queue" ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
-        LyricsButton.Foreground = panelMode == "lyrics" ? brush : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.LightGray);
+        ShuffleButton.Foreground = playback.ShuffleActive ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
+        RepeatButton.Foreground = playback.RepeatMode > 0 ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
+        QueueButton.Foreground = panelMode == "queue" ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
+        LyricsButton.Foreground = panelMode == "lyrics" ? textBrush : new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
+        UpdateNavigation(navigationPath);
     }
     private async Task RefreshAccentAsync()
     {
@@ -222,7 +247,7 @@ public sealed partial class MainWindow : Window
     {
         panelMode = panelMode == mode ? "" : mode;
         ContextPanel.Visibility = panelMode.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-        BrowserHost.Margin = new Thickness(0, 0, panelMode.Length == 0 ? 0 : 310, 0);
+        BrowserHost.Margin = new Thickness(0, 0, panelMode.Length == 0 ? 0 : ContextPanel.Width, 0);
         ContextTitle.Text = panelMode == "lyrics" ? "Lyrics" : "Queue";
         QueueList.Visibility = panelMode == "queue" ? Visibility.Visible : Visibility.Collapsed;
         LyricsScroll.Visibility = panelMode == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
@@ -240,6 +265,7 @@ public sealed partial class MainWindow : Window
     {
         if (context.Panel != panelMode) return;
         QueueList.ItemsSource = context.Items;
+        QueueList.SelectedItem = context.Items.FirstOrDefault(item => item.Selected);
         LyricsText.Text = context.Lyrics;
         ContextMessage.Text = context.Message;
         ContextMessage.Visibility = string.IsNullOrEmpty(context.Message) ? Visibility.Collapsed : Visibility.Visible;
@@ -268,7 +294,7 @@ public sealed partial class MainWindow : Window
             var volume = new ToggleSwitch { Header = "Remember volume", IsOn = settings.Current.RememberVolume };
             var media = new ToggleSwitch { Header = "Media key support", IsOn = settings.Current.MediaKeys };
             panel.Children.Add(new TextBlock { Text = "Appearance", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Dark", "Black" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
+            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Dark", "Light" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
             panel.Children.Add(theme);
             var accentToggle = new ToggleSwitch { Header = "Use artwork accent colors", IsOn = settings.Current.ArtworkAccent };
             var animations = new ToggleSwitch { Header = "Website animations", IsOn = settings.Current.Animations };
@@ -284,7 +310,7 @@ public sealed partial class MainWindow : Window
             foreach (var item in new[] { minimize, topmost, startMinimized, startup }) panel.Children.Add(item);
             var version = typeof(App).Assembly.GetName().Version;
             panel.Children.Add(new TextBlock { Text = $"Nocturne {version?.Major}.{version?.Minor}.{version?.Build} · MVP 2\nCtrl+Q: queue · Ctrl+J: lyrics\nSign-in stays within Google's pages.\nWebsite data remains in the local WebView2 profile.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
-            var dialog = new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Settings", Content = new ScrollViewer { Content = panel }, PrimaryButtonText = "Save", CloseButtonText = "Cancel" };
+            var dialog = new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Settings", Content = new ScrollViewer { Content = panel }, PrimaryButtonText = "Save", CloseButtonText = "Cancel" };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             {
                 settings.Current.HideLikes = likes.IsOn;
@@ -302,13 +328,13 @@ public sealed partial class MainWindow : Window
                 if (startup.IsOn != startupEnabled)
                 {
                     try { StartupService.SetEnabled(startup.IsOn); }
-                    catch { await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Startup setting", Content = "Windows could not update this setting. Your other settings will still be saved.", CloseButtonText = "OK" }.ShowAsync(); }
+                    catch { await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Startup setting", Content = "Windows could not update this setting. Your other settings will still be saved.", CloseButtonText = "OK" }.ShowAsync(); }
                 }
                 ApplyNativeSettings();
                 _ = RefreshAccentAsync();
                 if (tray != null) tray.MediaKeys = media.IsOn;
                 try { mediaIntegration?.Update(playback, systemMedia.IsOn); } catch { }
-                if (!settings.Save()) await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Settings", Content = "Settings apply for this session, but could not be saved. Check available disk space and folder permissions.", CloseButtonText = "OK" }.ShowAsync();
+                if (!settings.Save()) await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Settings", Content = "Settings apply for this session, but could not be saved. Check available disk space and folder permissions.", CloseButtonText = "OK" }.ShowAsync();
                 if (web.Bridge != null) await web.Bridge.ApplyStylesAsync(settings.Current);
                 await web.UpdateVolumePreferenceAsync();
             }

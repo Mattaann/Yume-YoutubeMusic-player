@@ -1,5 +1,15 @@
 # Validation
 
+## Version 1.1.3
+
+- Lyrics panel widened from 310 to 390 pixels with a dedicated scrollbar margin and disabled horizontal scrolling.
+- Dark and Light replace Dark and Black; existing Black preferences migrate to Dark.
+- Native surfaces, secondary text, dialogs, active controls and injected website styles support Light mode.
+- Active navigation and current queue entry have native selection styling. Queue matching can use the current video identifier or metadata when the website has no selected attribute.
+- Home playback retains browsing through an event-driven collapse of the website player. Explicit navigation and lyrics opening cancel this behavior.
+- Release build and JavaScript regression suites pass, including the Home playback/navigation fixture.
+- The user confirmed the final theme, Home behavior and queue highlighting work in the running application.
+
 ## Version 1.1.2
 
 - Regression fixtures cover mirrored queue roots, duplicate playlist positions, intentional repeated tracks, hidden entries and playback endpoint dispatch.

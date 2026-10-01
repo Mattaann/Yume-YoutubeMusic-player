@@ -1,0 +1,35 @@
+:root {
+  color-scheme: light;
+  --ytmusic-background:#f7f8fa;
+  --ytmusic-general-background-a:#f7f8fa;
+  --ytmusic-general-background-b:#edf0f3;
+  --ytmusic-general-background-c:#e3e7eb;
+  --ytmusic-brand-background-solid:#f7f8fa;
+  --ytmusic-primary-text-color:#20252b;
+  --ytmusic-secondary-text-color:#58616b;
+  --ytmusic-tertiary-text-color:#66717c;
+  --ytmusic-text-primary:#20252b;
+  --ytmusic-text-secondary:#58616b;
+  --ytmusic-menu-background:#fff;
+  --ytmusic-dialog-background-color:#fff;
+  --ytmusic-divider:rgba(0,0,0,.12);
+  --yt-spec-text-primary:#20252b;
+  --yt-spec-text-secondary:#58616b;
+  --yt-spec-base-background:#f7f8fa;
+  --yt-spec-raised-background:#fff;
+  --yt-spec-menu-background:#fff;
+  --yt-spec-icon-active-other:#303943;
+  --yt-spec-icon-inactive:#58616b;
+  --yt-spec-badge-chip-background:rgba(0,0,0,.07);
+}
+html, body, ytmusic-app, ytmusic-nav-bar, ytmusic-player-page { background:#f7f8fa!important;color:#20252b!important; }
+ytmusic-browse-response, ytmusic-search-page, ytmusic-player-queue, ytmusic-tab-renderer { background:#f7f8fa!important; }
+ytmusic-player-bar, ytmusic-search-box, tp-yt-paper-dialog, ytmusic-menu-popup-renderer, ytmusic-multi-page-menu-renderer { background:#fff!important;color:#20252b!important; }
+yt-formatted-string, ytmusic-app a, ytmusic-app h1, ytmusic-app h2, ytmusic-app input, tp-yt-paper-tab { color:#20252b!important; }
+ytmusic-app .byline, ytmusic-app .subtitle, ytmusic-app .secondary-flex-columns { color:#58616b!important; }
+ytmusic-app yt-icon, ytmusic-app tp-yt-paper-icon-button { color:#414b56; }
+ytmusic-app input::placeholder { color:#65717c!important; }
+ytmusic-detail-header-renderer, ytmusic-responsive-header-renderer, ytmusic-immersive-header-renderer { background:#edf0f3!important; }
+ytmusic-chip-cloud-chip-renderer { background:#e3e7eb!important;color:#20252b!important; }
+ytmusic-chip-cloud-chip-renderer[selected] { background:#cdd6df!important; }
+ytmusic-playlist-panel-video-renderer[selected] { background:#dfe8ee!important; }

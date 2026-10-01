@@ -30,7 +30,7 @@ public sealed class SettingsService
         try { Current = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(FilePath)) ?? new(); }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { Current = new(); }
         Current.Volume = double.IsFinite(Current.Volume) ? Math.Clamp(Current.Volume, 0, 1) : 0.7;
-        Current.Theme = Current.Theme == "Black" ? "Black" : "Dark";
+        Current.Theme = Current.Theme == "Light" ? "Light" : "Dark";
     }
     public bool Save()
     {

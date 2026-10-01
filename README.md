@@ -16,9 +16,12 @@ To build, use Windows 10 version 2004 or later, an x64 .NET 8 SDK and access to 
 - Queue shows up to 80 loaded website entries and highlights the current track. Select an entry to play it. Opening this panel does not expand or switch the website's queue.
 - Lyrics displays the website's available lyrics. Opening it selects the website's lyrics tab. Missing lyrics show an explanatory message and access to the original panel.
 - Artwork-derived accent colors for playback controls and active panel buttons, with a neutral fallback.
-- Dark and Black themes, compact website content, animation controls, optional video and Like/Dislike presentation.
+- Dark and Light themes, compact website content, animation controls, optional video and Like/Dislike presentation.
 - Close to tray, start in tray, always on top, optional Windows startup, media keys and Windows media information.
 - Saved window size, position, volume and settings.
+- A wider lyrics panel reserves space for its scrollbar.
+- The active navigation destination and current queue entry are highlighted.
+- Starting a track from Home collapses the website player back to browsing; the native bar continues playback.
 
 With Remember volume enabled, the native volume control sets the remembered level. It is saved shortly after adjustment and applied from the start of each music page, including when the website replaces its media element.
 
@@ -42,7 +45,7 @@ Preferences and the browser profile are stored under `Nocturne` in the current a
 
 ## Validation
 
-Run `node Tests/bridge.test.cjs`, `node Tests/context.test.cjs`, `node Tests/volume.test.cjs` and `dotnet run --project Tests/CoreTests/CoreTests.csproj`. See `VALIDATION.md` for coverage and remaining real-use checks.
+Run `node Tests/bridge.test.cjs`, `node Tests/context.test.cjs`, `node Tests/volume.test.cjs`, `node Tests/navigation.test.cjs` and `dotnet run --project Tests/CoreTests/CoreTests.csproj`. See `VALIDATION.md` for coverage and remaining real-use checks.
 
 ## Limitations
 

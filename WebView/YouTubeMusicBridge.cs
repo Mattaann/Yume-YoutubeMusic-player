@@ -11,6 +11,7 @@ public sealed class YouTubeMusicBridge
     public event Action<PlaybackState>? StateChanged;
     public event Action<string>? Shortcut;
     public event Action<ContextState>? ContextChanged;
+    public event Action<string>? NavigationChanged;
     public YouTubeMusicBridge(CoreWebView2 core)
     {
         this.core = core;
@@ -32,6 +33,7 @@ public sealed class YouTubeMusicBridge
                 if (state != null && double.IsFinite(state.Position) && double.IsFinite(state.Duration) && double.IsFinite(state.Volume)) StateChanged?.Invoke(state);
             }
             else if (type.GetString() == "shortcut") Shortcut?.Invoke(root.GetProperty("key").GetString() ?? "");
+            else if (type.GetString() == "navigation") NavigationChanged?.Invoke(root.GetProperty("path").GetString() ?? "");
             else if (type.GetString() == "context")
             {
                 var context = root.GetProperty("data").Deserialize<ContextState>(Json);
@@ -55,7 +57,7 @@ public sealed class YouTubeMusicBridge
         if (preferences.HideLikes) files.Add("hide-likes");
         if (!preferences.ShowVideo) files.Add("hide-video");
         if (preferences.Compact) files.Add("compact");
-        if (preferences.Theme == "Black") files.Add("black");
+        if (preferences.Theme == "Light") files.Add("light");
         if (!preferences.Animations) files.Add("no-animation");
         var css = string.Join("\n", files.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Styles", n + ".css"))));
         if (!preferences.HideLikes) css += "\n:root[data-nocturne-player] ytmusic-player-bar{opacity:1!important;height:72px!important;pointer-events:auto!important;}:root[data-nocturne-player] ytmusic-app{--ytmusic-player-bar-height:72px!important;}";

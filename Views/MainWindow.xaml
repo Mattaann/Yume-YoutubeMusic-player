@@ -4,23 +4,23 @@
       <Style TargetType="Button"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="12,10"/></Style>
     </Grid.Resources>
     <Grid.RowDefinitions><RowDefinition Height="42"/><RowDefinition Height="*"/><RowDefinition Height="110"/></Grid.RowDefinitions>
-    <Grid x:Name="TitleArea" Background="#0C0D0E"><TextBlock Text="NOCTURNE" FontSize="12" CharacterSpacing="180" Margin="22,0" VerticalAlignment="Center" Foreground="#BFC5C8"/></Grid>
+    <Grid x:Name="TitleArea" Background="#0C0D0E"><TextBlock Text="NOCTURNE" FontSize="12" CharacterSpacing="180" Margin="22,0" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/></Grid>
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions><ColumnDefinition Width="184"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <Grid x:Name="SidebarSurface" Background="#0C0D0E" Padding="14,22,12,16">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <StackPanel Spacing="6">
-          <TextBlock Text="YOUR MUSIC" FontSize="10" CharacterSpacing="160" Foreground="#777E83" Margin="12,0,0,14"/>
+        <StackPanel x:Name="NavigationItems" Spacing="6">
+          <TextBlock Text="YOUR MUSIC" FontSize="10" CharacterSpacing="160" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="12,0,0,14"/>
           <Button Content="⌂   Home" Tag="/" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
           <Button Content="◈   Explore" Tag="/explore" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
           <Button Content="▤   Library" Tag="/library" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
-          <TextBlock Text="COLLECTION" FontSize="10" CharacterSpacing="160" Foreground="#777E83" Margin="12,28,0,10"/>
+          <TextBlock Text="COLLECTION" FontSize="10" CharacterSpacing="160" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="12,28,0,10"/>
           <Button Content="Playlists" Tag="/library/playlists" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
           <Button Content="Liked music" Tag="/playlist?list=LM" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
           <Button Content="Albums" Tag="/library/albums" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
           <Button Content="Artists" Tag="/library/artists" Click="Navigate_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
         </StackPanel>
-        <StackPanel Grid.Row="2" Spacing="8"><Button Content="Settings" Click="Settings_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/><TextBlock Text="Powered by YouTube Music" Foreground="#73797E" FontSize="10" Margin="12,0,0,0"/></StackPanel>
+        <StackPanel Grid.Row="2" Spacing="8"><Button Content="Settings" Click="Settings_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/><TextBlock Text="Powered by YouTube Music" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="10" Margin="12,0,0,0"/></StackPanel>
       </Grid>
       <Grid Grid.Column="1">
         <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
@@ -30,18 +30,18 @@
           <Button Grid.Column="2" Content="Account" Click="Account_Click"/>
         </Grid>
         <Grid x:Name="BrowserHost" Grid.Row="1"/>
-        <Grid x:Name="LoadingPanel" Grid.Row="1" Background="#111213"><StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20"><ProgressRing x:Name="Spinner" IsActive="True" Width="36" Height="36"/><TextBlock x:Name="LoadingText" Text="Loading your music..." Foreground="#B9BEC2" TextWrapping="Wrap" MaxWidth="460" TextAlignment="Center"/><Button x:Name="RetryButton" Content="Retry" Click="Retry_Click" HorizontalAlignment="Center" Visibility="Collapsed"/></StackPanel></Grid>
-        <Grid x:Name="ContextPanel" Grid.Row="1" Width="310" HorizontalAlignment="Right" Background="#191B1D" Padding="16" Visibility="Collapsed">
+        <Grid x:Name="LoadingPanel" Grid.Row="1" Background="#111213"><StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20"><ProgressRing x:Name="Spinner" IsActive="True" Width="36" Height="36"/><TextBlock x:Name="LoadingText" Text="Loading your music..." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxWidth="460" TextAlignment="Center"/><Button x:Name="RetryButton" Content="Retry" Click="Retry_Click" HorizontalAlignment="Center" Visibility="Collapsed"/></StackPanel></Grid>
+        <Grid x:Name="ContextPanel" Grid.Row="1" Width="390" HorizontalAlignment="Right" Background="#191B1D" Padding="16" Visibility="Collapsed">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
           <Grid><TextBlock x:Name="ContextTitle" Text="Queue" FontSize="20" VerticalAlignment="Center"/><Button Content="×" HorizontalAlignment="Right" Click="ClosePanel_Click" AutomationProperties.Name="Close panel"/></Grid>
-          <Grid Grid.Row="1" Margin="0,16"><ListView x:Name="QueueList" IsItemClickEnabled="True" ItemClick="Queue_ItemClick" SelectionMode="None"><ListView.ItemTemplate><DataTemplate><StackPanel Margin="0,8" Spacing="4"><TextBlock Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="#AAB2B8" TextTrimming="CharacterEllipsis"/></StackPanel></DataTemplate></ListView.ItemTemplate></ListView><ScrollViewer x:Name="LyricsScroll" Visibility="Collapsed"><TextBlock x:Name="LyricsText" TextWrapping="Wrap" FontSize="17"/></ScrollViewer><TextBlock x:Name="ContextMessage" TextWrapping="Wrap" Foreground="#AAB2B8" IsHitTestVisible="False"/></Grid>
+          <Grid Grid.Row="1" Margin="0,16"><ListView x:Name="QueueList" IsItemClickEnabled="True" ItemClick="Queue_ItemClick" SelectionMode="Single"><ListView.ItemTemplate><DataTemplate><StackPanel Margin="0,8" Spacing="4"><TextBlock Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/></StackPanel></DataTemplate></ListView.ItemTemplate></ListView><ScrollViewer x:Name="LyricsScroll" Visibility="Collapsed" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled" Padding="0,0,20,0"><TextBlock x:Name="LyricsText" TextWrapping="Wrap" FontSize="17"/></ScrollViewer><TextBlock x:Name="ContextMessage" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsHitTestVisible="False"/></Grid>
           <Button Grid.Row="2" Content="Open in YouTube Music" Click="WebsitePanel_Click"/>
         </Grid>
       </Grid>
     </Grid>
     <Grid x:Name="PlayerSurface" Grid.Row="2" Background="#191B1D" Padding="22,12">
       <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="3*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><Border Width="58" Height="58" Background="#292D30" CornerRadius="6"><Image x:Name="Artwork" Stretch="UniformToFill"/></Border><StackPanel VerticalAlignment="Center" MaxWidth="240" Spacing="5"><TextBlock x:Name="SongTitle" Text="Choose something to play" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="Artist" Text="YouTube Music" FontSize="12" Foreground="#9AA1A6" TextTrimming="CharacterEllipsis"/></StackPanel></StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><Border Width="58" Height="58" Background="#292D30" CornerRadius="6"><Image x:Name="Artwork" Stretch="UniformToFill"/></Border><StackPanel VerticalAlignment="Center" MaxWidth="240" Spacing="5"><TextBlock x:Name="SongTitle" Text="Choose something to play" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock x:Name="Artist" Text="YouTube Music" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/></StackPanel></StackPanel>
       <StackPanel Grid.Column="1" Spacing="4">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
           <Button x:Name="ShuffleButton" Content="&#xE8B1;" FontFamily="Segoe MDL2 Assets" Tag="shuffle" Click="Control_Click" AutomationProperties.Name="Shuffle" IsEnabled="False" ToolTipService.ToolTip="Shuffle queue"/>
@@ -50,7 +50,7 @@
           <Button Content="&#xE893;" FontFamily="Segoe MDL2 Assets" Tag="next" Click="Control_Click" AutomationProperties.Name="Next"/>
           <Button x:Name="RepeatButton" Content="&#xE8EE;" FontFamily="Segoe MDL2 Assets" Tag="repeat" Click="Control_Click" AutomationProperties.Name="Repeat" IsEnabled="False" ToolTipService.ToolTip="Cycle repeat mode"/>
         </StackPanel>
-        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions><TextBlock x:Name="Elapsed" Text="0:00" FontSize="11" Foreground="#9AA1A6" VerticalAlignment="Center"/><Slider x:Name="Progress" Grid.Column="1" Minimum="0" Maximum="1" ValueChanged="Progress_Changed" AutomationProperties.Name="Playback position"/><TextBlock x:Name="Remaining" Grid.Column="2" Text="0:00" FontSize="11" Foreground="#9AA1A6" VerticalAlignment="Center" HorizontalAlignment="Right"/></Grid>
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions><TextBlock x:Name="Elapsed" Text="0:00" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/><Slider x:Name="Progress" Grid.Column="1" Minimum="0" Maximum="1" ValueChanged="Progress_Changed" AutomationProperties.Name="Playback position"/><TextBlock x:Name="Remaining" Grid.Column="2" Text="0:00" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/></Grid>
       </StackPanel>
       <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,8,0"><Button x:Name="QueueButton" Content="Queue" Click="Queue_Click" ToolTipService.ToolTip="Queue · Ctrl+Q"/><Button x:Name="LyricsButton" Content="Lyrics" Click="Lyrics_Click" ToolTipService.ToolTip="Lyrics · Ctrl+J"/></StackPanel>
       <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="10"><Button Content="&#xE74F;" FontFamily="Segoe MDL2 Assets" Tag="mute" Click="Control_Click" AutomationProperties.Name="Mute"/><Slider x:Name="Volume" Width="110" Minimum="0" Maximum="1" StepFrequency="0.01" ValueChanged="Volume_Changed" AutomationProperties.Name="Volume"/></StackPanel>
