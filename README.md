@@ -8,9 +8,11 @@ Yume is a native Windows desktop music player that presents YouTube Music inside
 
 ## Download and run
 
-Download the Windows x64 ZIP from this repository's Releases page, extract the entire folder, and launch `Yume.exe`. Keep all extracted files together. Windows 10 version 2004 or later and Microsoft Edge WebView2 Runtime are required. The .NET runtime is bundled; administrator privileges are not required.
+Download `Yume-1.2.6-Setup-x64.exe` from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
 
-This is an unsigned preview build. There is no installer or automatic updater.
+Windows 10 version 2004 or later is required. The .NET runtime is bundled. Setup installs Microsoft Edge WebView2 Runtime when missing; this step needs an internet connection. Administrator privileges are not required.
+
+The Windows x64 ZIP is also available for portable use: extract the entire folder and launch `Yume.exe`, keeping all files together. This is an unsigned preview build, so Windows may display a publisher warning. There is no automatic updater.
 
 ## Features
 
@@ -85,6 +87,16 @@ dotnet run --project Tests/CoreTests/CoreTests.csproj
 ```
 
 See [VALIDATION.md](VALIDATION.md) for coverage and remaining manual checks.
+
+### Build the installer
+
+Install Inno Setup 7 and download Microsoft's signed WebView2 Evergreen Bootstrapper. Publish the app first, then run:
+
+```powershell
+./Installer/build-installer.ps1 -AppSource ../Yume-portable -Bootstrapper ./MicrosoftEdgeWebview2Setup.exe -Compiler ISCC.exe -OutputDirectory ../release
+```
+
+The script verifies the bootstrapper signature and rejects known profile or diagnostic data in the app folder. Installer sources are in `Installer` on the main branch; the original 1.2.6 source release archive contains the application sources before installer packaging was added.
 
 ## Limitations
 
