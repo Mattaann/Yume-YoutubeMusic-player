@@ -13,7 +13,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.1.7</Version>
+    <Version>1.2.6</Version>
     <Product>Yume</Product>
     <AssemblyTitle>Yume</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -40,3 +40,9 @@
     <Copy SourceFiles="@(CompiledView)" DestinationFiles="@(CompiledView->'$(PublishDir)%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 </Project>
+
+
+
+
+
+

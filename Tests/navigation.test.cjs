@@ -18,3 +18,17 @@ handlers['yt-navigate']({detail:{endpoint:{watchEndpoint:{videoId:'fixture'}}}})
 context.location.pathname='/';context.reportNavigation();handlers['yt-navigate']({detail:{endpoint:{watchEndpoint:{videoId:'fixture'}}}});
 context.navigate('/library');context.retainHomeView();assert.equal(closes,1);
 console.log('PASS: Home playback collapse, retained navigation marker, explicit navigation and manual expansion');
+context.location.pathname='/search';context.location.search='?q=sabaton';context.reportNavigation();
+assert.equal(messages.filter(m=>m.type==='navigation').at(-1).path,'/');
+let dispatched;
+context.CustomEvent=class {constructor(type,options){this.type=type;this.detail=options.detail;}};
+app.dispatchEvent=event=>dispatched=event;
+context.location.pathname='/library/playlists';context.location.search='';context.reportNavigation();
+assert.equal(messages.filter(m=>m.type==='navigation').at(-1).path,'/library/playlists');
+context.navigate('/');assert.equal(dispatched.detail.endpoint.searchEndpoint.query,'sabaton');
+context.location.pathname='/search';context.location.search='?q=another';context.reportNavigation();
+context.navigate('/explore');assert.equal(dispatched.detail.endpoint.browseEndpoint.browseId,'FEmusic_explore');
+context.navigate('/');assert.equal(dispatched.detail.endpoint.searchEndpoint.query,'another');
+handlers['yt-navigate']({detail:{endpoint:{watchEndpoint:{videoId:'fixture'}}}});
+expanded=true;context.retainHomeView();assert.equal(expanded,false);
+console.log('PASS: searches highlight Home, survive playlist navigation, replace previous searches and keep playback collapsed');

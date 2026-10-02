@@ -24,6 +24,7 @@ public sealed class WebViewService
         {
             var environment = await CoreWebView2Environment.CreateWithOptionsAsync(null, Path.Combine(SettingsService.DataDirectory, "WebView2"), null);
             await view.EnsureCoreWebView2Async(environment);
+            view.DefaultBackgroundColor = Microsoft.UI.Colors.Transparent;
             var core = view.CoreWebView2;
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
@@ -49,6 +50,23 @@ public sealed class WebViewService
             core.NavigationCompleted += async (_, e) =>
             {
                 if (!e.IsSuccess) { Loading?.Invoke(true, "Can't connect to YouTube Music"); return; }
+                if (Uri.TryCreate(core.Source, UriKind.Absolute, out var page) && page.Scheme == "https" && page.Host is "consent.youtube.com" or "consent.google.com")
+                {
+                    try
+                    {
+                        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Scripts", "consent.js"));
+                        if (await core.ExecuteScriptAsync(script) == "true")
+                        {
+                            Loading?.Invoke(true, "Applying your privacy choice…");
+                            await Task.Delay(5000);
+                            if (core.Source == page.AbsoluteUri) Loading?.Invoke(false, "");
+                            return;
+                        }
+                    }
+                    catch { }
+                    Loading?.Invoke(false, "");
+                    return;
+                }
                 try { await Bridge.InjectAsync(settings.Current); Loading?.Invoke(false, ""); PageReady?.Invoke(); }
                 catch { Loading?.Invoke(true, "Couldn't initialize the player. Try again."); }
             };
@@ -91,3 +109,4 @@ public sealed class WebViewService
         try { Process.Start(new ProcessStartInfo(address) { UseShellExecute = true }); } catch { }
     }
 }
+

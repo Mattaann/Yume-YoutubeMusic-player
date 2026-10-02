@@ -5,16 +5,19 @@ const routes = Object.freeze({
   '/library/playlists':'FEmusic_liked_playlists',
   '/playlist?list=LM':'VLLM',
   '/library/albums':'FEmusic_liked_albums',
-  '/library/artists':'FEmusic_library_corpus_track_artists'
+  '/library/artists':'FEmusic_library_corpus_track_artists',
+  '/library/podcasts':'FEmusic_library_non_music_audio_list'
 });
 let lastBrowsePath = typeof location === 'undefined' ? '/' : location.pathname + location.search;
+let homePath = '/';
 let reportedPath = null;
 let keepHomeUntil = 0;
 function reportNavigation() {
   if(typeof location==='undefined')return;
   const path=location.pathname+location.search;
   if(location.pathname!=='/watch')lastBrowsePath=path;
-  const selected=Object.hasOwn(routes,lastBrowsePath)?lastBrowsePath:'';
+  if(location.pathname==='/search')homePath=path;
+  const selected=lastBrowsePath.startsWith('/search?')?'/':Object.hasOwn(routes,lastBrowsePath)||lastBrowsePath.startsWith('/playlist?')?lastBrowsePath:'';
   if(selected!==reportedPath) {
     reportedPath=selected;
     window.chrome.webview.postMessage({type:'navigation',path:selected});
@@ -29,7 +32,7 @@ function retainHomeView() {
 }
 document.addEventListener('yt-navigate',event=>{
   if(event.detail?.endpoint && !event.detail.endpoint.searchEndpoint)window.chrome.webview.postMessage({type:'shortcut',key:'clear-search'});
-  if(event.detail?.endpoint?.watchEndpoint && lastBrowsePath==='/') {
+  if(event.detail?.endpoint?.watchEndpoint && (lastBrowsePath==='/' || lastBrowsePath.startsWith('/search?'))) {
     keepHomeUntil=performance.now()+5000;
     queueMicrotask(retainHomeView);
   }
@@ -50,6 +53,7 @@ function attachNavigation() {
 }
 function navigate(path) {
   if (typeof path !== 'string') return;
+  if(path==='/')path=homePath;
   const target = new URL(path,location.origin);
   if (target.origin !== location.origin) return;
   keepHomeUntil=0;
@@ -58,6 +62,6 @@ function navigate(path) {
   const app = document.querySelector('ytmusic-app');
   const endpoint = path.startsWith('/search?')
     ? {searchEndpoint:{query:target.searchParams.get('q')||''}}
-    : routes[path] ? {browseEndpoint:{browseId:routes[path]}} : null;
+    : target.pathname==='/playlist' && /^[\w-]+$/.test(target.searchParams.get('list')||'') ? {browseEndpoint:{browseId:'VL'+target.searchParams.get('list')}} : routes[path] ? {browseEndpoint:{browseId:routes[path]}} : null;
   if (app && endpoint) app.dispatchEvent(new CustomEvent('yt-navigate',{bubbles:true,composed:true,detail:{endpoint}}));
 }

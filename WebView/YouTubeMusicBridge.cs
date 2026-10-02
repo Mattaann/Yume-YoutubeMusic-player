@@ -52,10 +52,11 @@ public sealed class YouTubeMusicBridge
     public async Task InjectAsync(Preferences preferences)
     {
         if (!NavigationPolicy.IsMusic(core.Source)) return;
-        var names = new[] { "selectors", "metadata", "controls", "navigation", "context", "suggestions", "observer", "bridge" };
+        var names = new[] { "selectors", "metadata", "controls", "navigation", "context", "suggestions", "library", "equalizer", "observer", "bridge" };
         var body = string.Join("\n", names.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Scripts", n + ".js"))));
         await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com'||window.__yume)return;" + body + "})();");
         await ApplyStylesAsync(preferences);
+        await ApplyEqualizerAsync(preferences);
     }
     public async Task ApplyStylesAsync(Preferences preferences)
     {
@@ -70,6 +71,56 @@ public sealed class YouTubeMusicBridge
         var css = string.Join("\n", files.Select(n => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "WebView", "Styles", n + ".css"))));
         if (!preferences.HideLikes) css += "\n:root[data-yume-player] ytmusic-player-bar{opacity:1!important;height:72px!important;pointer-events:auto!important;}:root[data-yume-player] ytmusic-app{--ytmusic-player-bar-height:72px!important;}";
         await core.ExecuteScriptAsync("(()=>{if(location.origin!=='https://music.youtube.com')return;let s=document.getElementById('yume-style');if(!s){s=document.createElement('style');s.id='yume-style';document.head.append(s);}s.textContent=" + JsonSerializer.Serialize(css) + ";})();");
+    }
+    public async Task ApplyEqualizerAsync(Preferences preferences)
+    {
+        if (!NavigationPolicy.IsMusic(core.Source)) return;
+        var options = JsonSerializer.Serialize(new { enabled = preferences.EqualizerEnabled, gains = preferences.EqualizerGains });
+        await core.ExecuteScriptAsync("window.__yume?.configureEqualizer(" + options + ")");
+    }
+    public async Task SetBackgroundAsync(double width, double height, double x, double y, double purple, double blue)
+    {
+        if (!NavigationPolicy.IsMusic(core.Source)) return;
+        var values = JsonSerializer.Serialize(new[] { width, height, x, y, purple, blue });
+        await core.ExecuteScriptAsync("(()=>{const v=" + values + ";const s=document.documentElement.style;s.setProperty('--yume-shared-background','linear-gradient(90deg,#0d0e17 0%,#181427 '+v[4]+'%,#2b1c44 '+v[5]+'%,#192b48 100%)');s.setProperty('--yume-shared-size',v[0]+'px '+v[1]+'px');s.setProperty('--yume-shared-position',(-v[2])+'px '+(-v[3])+'px');})();");
+    }
+    public async Task<T?> ReadAsync<T>(string function)
+    {
+        if (!NavigationPolicy.IsMusic(core.Source)) return default;
+        var script = "window.__yume?." + function + "()";
+        var ticket = Guid.NewGuid().ToString("N");
+        await core.ExecuteScriptAsync("window.__yumeRequests ??= {}; window.__yumeRequests['" + ticket + "']=null; Promise.resolve(" + script + ").then(v=>{if('" + ticket + "' in window.__yumeRequests)window.__yumeRequests['" + ticket + "']={value:v}},()=>{if('" + ticket + "' in window.__yumeRequests)window.__yumeRequests['" + ticket + "']={value:null}});");
+        try
+        {
+            for (var attempt = 0; attempt < 100; attempt++)
+            {
+                await Task.Delay(150);
+                if (!NavigationPolicy.IsMusic(core.Source)) return default;
+                var json = await core.ExecuteScriptAsync("window.__yumeRequests?.['" + ticket + "'] ?? null");
+                if (json == "null") continue;
+                using var result = JsonDocument.Parse(json);
+                return result.RootElement.GetProperty("value").Deserialize<T>(Json);
+            }
+            return default;
+        }
+        finally { if (NavigationPolicy.IsMusic(core.Source)) await core.ExecuteScriptAsync("delete window.__yumeRequests?.['" + ticket + "']"); }
+    }
+    public Task<AccountInfo?> ReadAccountAsync() => ReadAsync<AccountInfo>("readAccount");
+    public Task<LibraryResult?> ReadLibraryAsync() => ReadAsync<LibraryResult>("readLibraryPlaylists");
+    public async Task<string?> AddSongAsync(string playlistId, string videoId)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(playlistId, @"^[\w-]+$") || !System.Text.RegularExpressions.Regex.IsMatch(videoId, @"^[\w-]{11}$")) return "Invalid song or playlist.";
+        return await ReadAsync<string>("addDraggedSong.bind(null," + JsonSerializer.Serialize(playlistId) + "," + JsonSerializer.Serialize(videoId) + ")");
+    }
+    public async Task<string?> AddQueueSongAsync(string playlistId, string key)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(playlistId, @"^[\w-]+$") || !System.Text.RegularExpressions.Regex.IsMatch(key, @"^q[0-9]+$")) return "Invalid queue item.";
+        return await ReadAsync<string>("addQueuedSong.bind(null," + JsonSerializer.Serialize(playlistId) + "," + JsonSerializer.Serialize(key) + ")");
+    }
+    public async Task SignOutAsync()
+    {
+        await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.Cookies | CoreWebView2BrowsingDataKinds.AllDomStorage);
+        core.Navigate("https://music.youtube.com");
     }
     public async Task CommandAsync(string command, double value = 0)
     {

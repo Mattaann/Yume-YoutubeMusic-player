@@ -28,6 +28,8 @@ function sendState(event) {
   if (event?.type === 'timeupdate' && performance.now() - lastSent < 700) return;
   lastSent = performance.now();
   document.documentElement?.toggleAttribute('data-yume-player', !!media && !!find('play') && !!find('next') && !!find('previous'));
-  window.chrome.webview.postMessage({type:'state', data:snapshot()});
+  const state=snapshot();
+  document.documentElement?.toggleAttribute('data-yume-playing',state.playing);
+  window.chrome.webview.postMessage({type:'state', data:state});
   if(event?.type !== 'timeupdate') refreshContextTrack();
 }

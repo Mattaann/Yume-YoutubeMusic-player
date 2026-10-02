@@ -23,6 +23,11 @@ public sealed partial class MainWindow : Window
     private bool searchSubmitted;
     private bool searchFocused;
     private bool settingsOpen;
+    private SettingsWindow? settingsWindow;
+    private readonly List<Microsoft.UI.Xaml.Media.LinearGradientBrush> visualBrushes = new();
+    private readonly System.Diagnostics.Stopwatch visualClock = new();
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? visualTimer;
+    private bool backgroundSyncPending;
     private string artwork = "";
     private PlaybackState playback = new();
     private string panelMode = "";
@@ -34,7 +39,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Browser = new Microsoft.UI.Xaml.Controls.WebView2();
+        Browser = new Microsoft.UI.Xaml.Controls.WebView2 { DefaultBackgroundColor = Microsoft.UI.Colors.Transparent };
         BrowserHost.Children.Add(Browser);
         Title = "Yume";
         try { StartupService.MigrateLegacyEntry(); } catch { }
@@ -46,7 +51,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.ButtonForegroundColor = Microsoft.UI.Colors.LightGray;
         WindowPlacement.Restore(AppWindow, settings.Current.Width, settings.Current.Height, settings.Current.X, settings.Current.Y, 1100, 640);
         ApplyNativeSettings();
-        Volume.Value = settings.Current.Volume;
+        Volume.Value = settings.Current.Volume * 100;
         web = new(Browser, settings);
         Search.GotFocus += (_, _) => searchFocused = true;
         Search.LostFocus += (_, _) => searchFocused = false;
@@ -69,7 +74,7 @@ public sealed partial class MainWindow : Window
         {
             LoadingPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
             LoadingText.Text = message;
-            var loading = message == "Loading your music...";
+            var loading = message is "Loading your music..." or "Applying your privacy choice…";
             Spinner.IsActive = loading;
             RetryButton.Visibility = loading ? Visibility.Collapsed : Visibility.Visible;
         };
@@ -86,8 +91,12 @@ public sealed partial class MainWindow : Window
             web.Bridge.ContextChanged += UpdateContext;
             web.Bridge.NavigationChanged += UpdateNavigation;
         };
+        Root.SizeChanged += (_, _) => RenderVisualTheme();
+        Browser.SizeChanged += (_, _) => RenderVisualTheme();
         web.PageReady += async () =>
         {
+            RenderVisualTheme();
+            _ = RefreshPlaylistsAsync();
             try { if (web.Bridge != null && panelMode.Length > 0) await web.Bridge.SetPanelAsync(panelMode); } catch { }
         };
         try
@@ -119,7 +128,7 @@ public sealed partial class MainWindow : Window
             mediaIntegration.Command += action => DispatcherQueue.TryEnqueue(() => _ = CommandAsync(action));
         }
         catch { }
-        Closed += (_, _) => { exiting = true; searchTimer.Stop(); volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
+        Closed += (_, _) => { exiting = true; settingsWindow?.Close(); visualTimer?.Stop(); searchTimer.Stop(); volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
         AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.L, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.M, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => _ = CommandAsync("mute"));
@@ -135,7 +144,7 @@ public sealed partial class MainWindow : Window
                 e.Handled = true;
             }
         };
-        Root.Loaded += async (_, _) => { await web.InitializeAsync(); if (settings.Current.StartMinimized && tray != null) AppWindow.Hide(); };
+        Root.Loaded += async (_, _) => { await web.InitializeAsync(); await ShowWelcomeAsync(); if (settings.Current.StartMinimized && tray != null) AppWindow.Hide(); };
         updating = false;
     }
     private void AddShortcut(VirtualKey key, VirtualKeyModifiers modifiers, Action action)
@@ -151,6 +160,7 @@ public sealed partial class MainWindow : Window
     private void UpdatePlayer(PlaybackState state)
     {
         playback = state;
+        UpdateVisualPlayback();
         updating = true;
         SongTitle.Text = state.Title;
         Artist.Text = state.Artist;
@@ -167,7 +177,7 @@ public sealed partial class MainWindow : Window
         Progress.IsEnabled = state.Available && state.CanSeek;
         Elapsed.Text = FormatTime(state.Position);
         Remaining.Text = "−" + FormatTime(Math.Max(0, state.Duration - state.Position));
-        if (state.Available) Volume.Value = Math.Clamp(state.Volume, 0, 1);
+        if (state.Available) Volume.Value = Math.Round(Math.Clamp(state.Volume, 0, 1) * 100);
         if (artwork != state.Artwork)
         {
             artwork = state.Artwork;
@@ -189,18 +199,18 @@ public sealed partial class MainWindow : Window
     private void UpdateNavigation(string path)
     {
         navigationPath = path;
-        foreach (var button in NavigationItems.Children.OfType<Button>())
+        foreach (var button in NavigationItems.Children.OfType<Button>().Concat(SidebarPlaylists.Children.OfType<Button>().Where(b => b.Tag is string)))
         {
             var selected = (string)button.Tag == path;
             button.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? Windows.UI.Color.FromArgb(45, accent.R, accent.G, accent.B) : Microsoft.UI.Colors.Transparent);
             button.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(selected ? AccentTextColor : InactiveColor);
-            button.FontWeight = selected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+            button.FontWeight = selected || NavigationItems.Children.Contains(button) ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(button, selected ? "Current page" : "");
         }
     }
     private void Back_Click(object sender, RoutedEventArgs e) { if (Browser.CoreWebView2?.CanGoBack == true) Browser.CoreWebView2.GoBack(); }
     private void Forward_Click(object sender, RoutedEventArgs e) { if (Browser.CoreWebView2?.CanGoForward == true) Browser.CoreWebView2.GoForward(); }
-    private void Account_Click(object sender, RoutedEventArgs e) => _ = CommandAsync("account");
+    private void Account_Click(object sender, RoutedEventArgs e) => _ = ShowAccountAsync();
     private void Control_Click(object sender, RoutedEventArgs e) => _ = CommandAsync((string)((Button)sender).Tag);
     private void Retry_Click(object sender, RoutedEventArgs e) => web.Retry();
     private void Search_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -240,10 +250,10 @@ public sealed partial class MainWindow : Window
     private void Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (updating) return;
-        settings.Current.Volume = e.NewValue;
+        settings.Current.Volume = e.NewValue / 100;
         volumeSaveTimer.Stop();
         volumeSaveTimer.Start();
-        _ = CommandAsync("volume", e.NewValue);
+        _ = CommandAsync("volume", e.NewValue / 100);
     }
     private void Progress_Changed(object sender, RangeBaseValueChangedEventArgs e) { if (!updating) _ = CommandAsync("seek", e.NewValue); }
     private void Settings_Click(object sender, RoutedEventArgs e) => _ = ShowSettingsAsync();
@@ -251,6 +261,14 @@ public sealed partial class MainWindow : Window
     private Windows.UI.Color AccentTextColor => settings.Current.Theme == "Light" ? Windows.UI.Color.FromArgb(255, (byte)(accent.R * 0.42), (byte)(accent.G * 0.42), (byte)(accent.B * 0.42)) : accent;
     private void ApplyNativeSettings()
     {
+        RenderVisualTheme();
+        SidebarPlaylists.Visibility = settings.Current.ShowSidebarPlaylists ? Visibility.Visible : Visibility.Collapsed;
+        LikedMusicButton.Visibility = settings.Current.ShowLikedMusic ? Visibility.Visible : Visibility.Collapsed;
+        AlbumsButton.Visibility = settings.Current.ShowAlbums ? Visibility.Visible : Visibility.Collapsed;
+        ArtistsButton.Visibility = settings.Current.ShowArtists ? Visibility.Visible : Visibility.Collapsed;
+        PodcastsButton.Visibility = settings.Current.ShowPodcasts ? Visibility.Visible : Visibility.Collapsed;
+        LibraryDivider.Visibility = settings.Current.ShowLikedMusic || settings.Current.ShowAlbums || settings.Current.ShowArtists || settings.Current.ShowPodcasts ? Visibility.Visible : Visibility.Collapsed;
+        visualBrushes.Clear();
         var light = settings.Current.Theme == "Light";
         Root.RequestedTheme = light ? ElementTheme.Light : ElementTheme.Dark;
         AppWindow.TitleBar.ButtonForegroundColor = light ? Microsoft.UI.Colors.Black : Microsoft.UI.Colors.LightGray;
@@ -261,22 +279,58 @@ public sealed partial class MainWindow : Window
         TitleArea.Background = SidebarSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(light ? Windows.UI.Color.FromArgb(255, 237, 240, 243) : Windows.UI.Color.FromArgb(255, 12, 13, 14));
         if (settings.Current.Theme == "Yume")
         {
-            Root.Background = LoadingPanel.Background = CreateYumeBackground(13, 14, 23);
-            SidebarSurface.Background = ContextPanel.Background = CreateYumeBackground(15, 15, 25);
-            PlayerSurface.Background = CreateYumeBackground(19, 19, 31);
-            TitleArea.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 12, 12, 21));
+            Root.Background = CreateYumeBackground(13, 14, 23);
+            var transparent = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            LoadingPanel.Background = SidebarSurface.Background = ContextPanel.Background = PlayerSurface.Background = TitleArea.Background = transparent;
         }
         if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.IsAlwaysOnTop = settings.Current.AlwaysOnTop;
         ApplyAccent();
+        UpdateVisualPlayback();
     }
-    private static Microsoft.UI.Xaml.Media.LinearGradientBrush CreateYumeBackground(byte r, byte g, byte b)
+    private Microsoft.UI.Xaml.Media.LinearGradientBrush CreateYumeBackground(byte r, byte g, byte b)
     {
-        var brush = new Microsoft.UI.Xaml.Media.LinearGradientBrush { StartPoint = new Windows.Foundation.Point(0, 0), EndPoint = new Windows.Foundation.Point(1, 1) };
+        var brush = new Microsoft.UI.Xaml.Media.LinearGradientBrush { StartPoint = new Windows.Foundation.Point(0, 0), EndPoint = new Windows.Foundation.Point(1, 0) };
         brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, r, g, b), Offset = 0 });
-        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, r, g, b), Offset = 0.5 });
-        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 31, 23, 48), Offset = 0.78 });
-        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 20, 30, 49), Offset = 1 });
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 24, 20, 39), Offset = 0.35 });
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 43, 28, 68), Offset = 0.65 });
+        brush.GradientStops.Add(new() { Color = Windows.UI.Color.FromArgb(255, 25, 43, 72), Offset = 1 });
+        visualBrushes.Add(brush);
         return brush;
+    }
+    private void UpdateVisualPlayback()
+    {
+        var enabled = settings.Current.Theme == "Yume" && settings.Current.VisualTheme && playback.Playing;
+        if (enabled) visualClock.Start(); else visualClock.Stop();
+        if (visualTimer == null)
+        {
+            visualTimer = DispatcherQueue.CreateTimer();
+            visualTimer.Interval = TimeSpan.FromMilliseconds(100);
+            visualTimer.Tick += (_, _) => RenderVisualTheme();
+        }
+        if (enabled && !visualTimer.IsRunning) visualTimer.Start(); else if (!enabled) visualTimer.Stop();
+        RenderVisualTheme();
+    }
+    private void RenderVisualTheme()
+    {
+        var phase = settings.Current.VisualTheme ? visualClock.Elapsed.TotalSeconds * Math.PI / 24 : 0;
+        foreach (var brush in visualBrushes)
+        {
+            brush.GradientStops[1].Offset = 0.35 + 0.15 * Math.Sin(phase);
+            brush.GradientStops[2].Offset = 0.65 + 0.15 * Math.Sin(phase);
+        }
+        _ = SyncWebBackgroundAsync(phase);
+    }
+    private async Task SyncWebBackgroundAsync(double phase)
+    {
+        if (backgroundSyncPending || web?.Bridge == null || settings.Current.Theme != "Yume" || Root.ActualWidth <= 0 || Browser.ActualWidth <= 0) return;
+        backgroundSyncPending = true;
+        try
+        {
+            var origin = Browser.TransformToVisual(Root).TransformPoint(new Windows.Foundation.Point());
+            await web.Bridge.SetBackgroundAsync(Root.ActualWidth, Root.ActualHeight, origin.X, origin.Y, 35 + 15 * Math.Sin(phase), 65 + 15 * Math.Sin(phase));
+        }
+        catch { }
+        finally { backgroundSyncPending = false; }
     }
     private void StylePanelButton(Button button, bool selected)
     {
@@ -293,6 +347,13 @@ public sealed partial class MainWindow : Window
         var brush = accentBrush;
         var textBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(AccentTextColor);
         PlayButton.Background = brush;
+        foreach (var button in new[] { PreviousButton, NextButton })
+        {
+            button.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(settings.Current.Theme == "Light" ? (byte)32 : (byte)48, accent.R, accent.G, accent.B));
+            button.BorderBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(90, accent.R, accent.G, accent.B));
+            button.BorderThickness = new Thickness(1);
+            button.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(InactiveColor);
+        }
         foreach (var slider in new[] { Progress, Volume })
         {
             slider.Resources["SliderTrackValueFill"] = brush;
@@ -358,66 +419,29 @@ public sealed partial class MainWindow : Window
         await SetPanelAsync("");
         try { if (web.Bridge != null) await web.Bridge.OpenWebsitePanelAsync(mode); } catch { }
     }
-    private async Task ShowSettingsAsync()
+    private Task ShowSettingsAsync()
     {
-        if (settingsOpen) return;
+        if (settingsWindow != null) { settingsWindow.Activate(); return Task.CompletedTask; }
         settingsOpen = true;
-        try
+        settingsWindow = new SettingsWindow(settings, tray != null, async () =>
         {
-            var panel = new StackPanel { Spacing = 18 };
-            var likes = new ToggleSwitch { Header = "Hide Like / Dislike", IsOn = settings.Current.HideLikes };
-            var video = new ToggleSwitch { Header = "Show video content", IsOn = settings.Current.ShowVideo };
-            var compact = new ToggleSwitch { Header = "Compact content", IsOn = settings.Current.Compact };
-            var minimize = new ToggleSwitch { Header = "Close to system tray", IsOn = settings.Current.MinimizeToTray, IsEnabled = tray != null };
-            var volume = new ToggleSwitch { Header = "Remember volume", IsOn = settings.Current.RememberVolume };
-            var media = new ToggleSwitch { Header = "Media key support", IsOn = settings.Current.MediaKeys };
-            panel.Children.Add(new TextBlock { Text = "Appearance", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            var theme = new ComboBox { Header = "Theme", ItemsSource = new[] { "Yume", "Dark", "Light" }, SelectedItem = settings.Current.Theme, HorizontalAlignment = HorizontalAlignment.Stretch };
-            panel.Children.Add(theme);
-            var accentToggle = new ToggleSwitch { Header = "Use artwork accent colors", IsOn = settings.Current.ArtworkAccent };
-            var animations = new ToggleSwitch { Header = "Website animations", IsOn = settings.Current.Animations };
-            var systemMedia = new ToggleSwitch { Header = "Windows media information", IsOn = settings.Current.WindowsMediaIntegration };
-            var topmost = new ToggleSwitch { Header = "Always on top", IsOn = settings.Current.AlwaysOnTop };
-            var startMinimized = new ToggleSwitch { Header = "Start in system tray", IsOn = settings.Current.StartMinimized, IsEnabled = tray != null };
-            var startupEnabled = StartupService.IsEnabled();
-            var startup = new ToggleSwitch { Header = "Start with Windows", IsOn = startupEnabled };
-            foreach (var item in new[] { accentToggle, animations, compact, likes, video }) panel.Children.Add(item);
-            panel.Children.Add(new TextBlock { Text = "Playback", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            foreach (var item in new[] { volume, media, systemMedia }) panel.Children.Add(item);
-            panel.Children.Add(new TextBlock { Text = "Windows", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            foreach (var item in new[] { minimize, topmost, startMinimized, startup }) panel.Children.Add(item);
-            var version = typeof(App).Assembly.GetName().Version;
-            panel.Children.Add(new TextBlock { Text = $"Yume {version?.Major}.{version?.Minor}.{version?.Build} · MVP 2\nCtrl+Q: queue · Ctrl+J: lyrics\nSign-in stays within Google's pages.\nWebsite data remains in the local WebView2 profile.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
-            var dialog = new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Settings", Content = new ScrollViewer { Content = panel }, PrimaryButtonText = "Save", CloseButtonText = "Cancel" };
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-            {
-                settings.Current.HideLikes = likes.IsOn;
-                settings.Current.ShowVideo = video.IsOn;
-                settings.Current.Compact = compact.IsOn;
-                settings.Current.MinimizeToTray = minimize.IsOn;
-                settings.Current.RememberVolume = volume.IsOn;
-                settings.Current.MediaKeys = media.IsOn;
-                settings.Current.Theme = theme.SelectedItem as string ?? "Yume";
-                settings.Current.ArtworkAccent = accentToggle.IsOn;
-                settings.Current.Animations = animations.IsOn;
-                settings.Current.WindowsMediaIntegration = systemMedia.IsOn;
-                settings.Current.AlwaysOnTop = topmost.IsOn;
-                settings.Current.StartMinimized = startMinimized.IsOn;
-                if (startup.IsOn != startupEnabled)
-                {
-                    try { StartupService.SetEnabled(startup.IsOn); }
-                    catch { await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Startup setting", Content = "Windows could not update this setting. Your other settings will still be saved.", CloseButtonText = "OK" }.ShowAsync(); }
-                }
-                ApplyNativeSettings();
-                _ = RefreshAccentAsync();
-                if (tray != null) tray.MediaKeys = media.IsOn;
-                try { mediaIntegration?.Update(playback, systemMedia.IsOn); } catch { }
-                if (!settings.Save()) await new ContentDialog { XamlRoot = Root.XamlRoot, RequestedTheme = Root.RequestedTheme, Title = "Settings", Content = "Settings apply for this session, but could not be saved. Check available disk space and folder permissions.", CloseButtonText = "OK" }.ShowAsync();
-                if (web.Bridge != null) await web.Bridge.ApplyStylesAsync(settings.Current);
-                await web.UpdateVolumePreferenceAsync();
-            }
-        }
-        catch { }
-        finally { settingsOpen = false; }
+            ApplyNativeSettings();
+            _ = RefreshPlaylistsAsync();
+            _ = RefreshAccentAsync();
+            if (tray != null) tray.MediaKeys = settings.Current.MediaKeys;
+            try { mediaIntegration?.Update(playback, settings.Current.WindowsMediaIntegration); } catch { }
+            if (web.Bridge != null) { await web.Bridge.ApplyStylesAsync(settings.Current); await web.Bridge.ApplyEqualizerAsync(settings.Current); }
+            await web.UpdateVolumePreferenceAsync();
+        }, async () =>
+        {
+            RestoreMain();
+            await CommandAsync("account");
+        }, async () => web.Bridge == null ? "Start playback to use the equalizer." : await web.Bridge.ReadAsync<string>("equalizerStatus") ?? "Equalizer status unavailable.", async () => { if (web.Bridge != null) await web.Bridge.ApplyEqualizerAsync(settings.Current); });
+        settingsWindow.Closed += (_, _) => { settingsWindow = null; settingsOpen = false; };
+        settingsWindow.Activate();
+        return Task.CompletedTask;
     }
 }
+
+
+
