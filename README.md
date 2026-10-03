@@ -104,6 +104,19 @@ Yume is an independent client and is not affiliated with Google or YouTube. It u
 
 Queue content is limited to loaded website entries. Reordering/removing queue entries and advanced library operations remain in the original website. Lyrics do not have timed line highlighting. Playlist writes, fresh-session consent and EQ behavior should be checked with your own account and audio setup. There is no mini player.
 
+## Gallery
+
+A quick look at Yume's interface.
+
+<p align="center">
+  <img src="Assets/Yumeinstaller.png" width="32%" alt="Yume Home">
+  <img src="Assets/Yumepreview.png" width="32%" alt="Yume Player">
+</p>
+
+<p align="center">
+  <em>Home & discovery · Now playing & queue · Equalizer & sound controls</em>
+</p>
+
 ## Project structure
 
 - `Views`: native player, account/contact/welcome dialogs, Settings and Equalizer windows.
