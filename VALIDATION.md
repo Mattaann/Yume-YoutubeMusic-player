@@ -1,5 +1,20 @@
 # Validation
 
+## Version 1.2.10 test build
+
+- A temporary hidden WebView shares the existing environment during sign-in from a signed-out session. It checks YouTube Music's authenticated state before returning the main view to music.
+- Checks are bounded, muted and canceled when leaving the sign-in flow or closing the app. The monitor does not log account details or read credential values.
+- Live monitor test detected an existing authenticated session. The diagnostic recorded one boolean and is excluded from the test build.
+- Release build, core C# tests and all nine JavaScript suites pass. Fresh sign-in with two-step verification still requires manual validation. Switching an already signed-in account uses the normal redirect or Back to music button.
+
+## Version 1.2.9 test build
+
+- Navigation no longer rewrites and cancels authentication return requests to add a language query; the local language preference remains in effect.
+- Canceled and superseded navigations no longer show connection failures. Player scripts only initialize on YouTube Music.
+- Trusted account intermediates stay inside Yume; recognized post-sign-in landing pages return to music. A Back to music button is available during sign-in.
+- Core tests cover sign-in intermediates, return pages, challenge preservation and hostile-origin rejection. All nine JavaScript suites and the Release build pass.
+- End-to-end Google sign-in and two-step verification require manual testing; no account was signed out for automated testing.
+
 ## Version 1.2.8 test build
 
 - Uses the site's English language code and updates only the language field in the local YouTube PREF cookie, preserving other preferences.
@@ -46,4 +61,11 @@ Tests use synthetic data. Releases exclude diagnostic builds, profiles, credenti
 - English is the default setup language, including upgrades.
 - Silent installation and uninstall pass; all 470 payload files match by SHA-256.
 - Source, application payload and Git history privacy scan reports no findings.
+
+
+## Installer 1.2.10
+
+- User confirmed successful sign-in and return to music in the test build.
+- Installer build, isolated silent installation and uninstall pass. All 470 application files match the published payload by SHA-256.
+- Application and source privacy scan reports no findings; temporary session diagnostics are excluded.
 

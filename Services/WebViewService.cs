@@ -9,6 +9,26 @@ public sealed class WebViewService
     private readonly WebView2 view;
     private readonly SettingsService settings;
     private bool initializing;
+    private bool signingIn;
+    private bool wasSignedIn;
+    private SignInMonitor? signInMonitor;
+    private CoreWebView2Environment? environment;
+    public void Close() { signInMonitor?.Dispose(); signInMonitor = null; }
+    private async Task MonitorSignInAsync()
+    {
+        if (wasSignedIn || signInMonitor != null || environment == null || view.Parent is not Panel host) return;
+        var monitor = new SignInMonitor(host);
+        signInMonitor = monitor;
+        var authenticated = await monitor.WaitAsync(environment);
+        if (signInMonitor != monitor) return;
+        signInMonitor = null;
+        monitor.Dispose();
+        if (authenticated && signingIn) ReturnToMusic();
+    }
+    private ulong currentNavigation;
+    public event Action<bool>? SignInChanged;
+    public bool IsMusicPage => view.CoreWebView2 != null && NavigationPolicy.IsMusic(view.CoreWebView2.Source);
+    public void ReturnToMusic() => view.CoreWebView2?.Navigate(LocalizedAddress("https://music.youtube.com/"));
     private string appliedLanguage = "";
     private string PreferredLanguage => settings.Current.Language == "Match system" ? Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? "en-US" : "en-US";
     private string SiteLanguage => PreferredLanguage == "en-US" ? "en" : PreferredLanguage.StartsWith("sv", StringComparison.OrdinalIgnoreCase) ? "sv" : PreferredLanguage;
@@ -62,7 +82,7 @@ public sealed class WebViewService
         {
             appliedLanguage = PreferredLanguage;
             var options = new CoreWebView2EnvironmentOptions { Language = PreferredLanguage };
-            var environment = await CoreWebView2Environment.CreateWithOptionsAsync(null, Path.Combine(SettingsService.DataDirectory, "WebView2"), options);
+            environment = await CoreWebView2Environment.CreateWithOptionsAsync(null, Path.Combine(SettingsService.DataDirectory, "WebView2"), options);
             await view.EnsureCoreWebView2Async(environment);
             view.DefaultBackgroundColor = Microsoft.UI.Colors.Transparent;
             var core = view.CoreWebView2;
@@ -73,17 +93,18 @@ public sealed class WebViewService
             core.Settings.IsGeneralAutofillEnabled = false;
             await UpdateLanguageCookieAsync();
             await UpdateVolumePreferenceAsync();
-            core.NavigationStarting += (_, e) =>
+            core.NavigationStarting += (sender, e) =>
             {
-                if (!NavigationPolicy.IsInternal(e.Uri)) { e.Cancel = true; OpenExternal(e.Uri); return; }
-                var localized = LocalizedAddress(e.Uri);
-                if (localized != e.Uri) { e.Cancel = true; core.Navigate(localized); return; }
-                Loading?.Invoke(true, "Loading your music...");
+                currentNavigation = e.NavigationId;
+                if (!NavigationPolicy.IsInternal(e.Uri) && !(signingIn && NavigationPolicy.IsSignInReturn(e.Uri))) { e.Cancel = true; Loading?.Invoke(false, ""); OpenExternal(e.Uri); return; }
+                if (NavigationPolicy.IsAccount(e.Uri)) { signingIn = true; _ = MonitorSignInAsync(); }
+                SignInChanged?.Invoke(signingIn && !NavigationPolicy.IsMusic(e.Uri));
+                Loading?.Invoke(NavigationPolicy.IsMusic(e.Uri), "Loading your music...");
             };
             core.NewWindowRequested += (_, e) =>
             {
                 e.Handled = true;
-                if (NavigationPolicy.IsInternal(e.Uri)) core.Navigate(e.Uri); else OpenExternal(e.Uri);
+                if (NavigationPolicy.IsInternal(e.Uri) || (signingIn && NavigationPolicy.IsSignInReturn(e.Uri))) core.Navigate(e.Uri); else OpenExternal(e.Uri);
             };
             core.PermissionRequested += (_, e) => e.State = CoreWebView2PermissionState.Deny;
             core.DownloadStarting += (_, e) => e.Cancel = true;
@@ -92,7 +113,15 @@ public sealed class WebViewService
             Ready?.Invoke();
             core.NavigationCompleted += async (_, e) =>
             {
-                if (!e.IsSuccess) { Loading?.Invoke(true, "Can't connect to YouTube Music"); return; }
+                if (e.NavigationId != currentNavigation) return;
+                if (!e.IsSuccess)
+                {
+                    if (e.WebErrorStatus == CoreWebView2WebErrorStatus.OperationCanceled) return;
+                    Loading?.Invoke(true, signingIn ? "Sign-in could not finish loading. Try again or return to music." : "Can't connect to YouTube Music");
+                    return;
+                }
+                if (signingIn && NavigationPolicy.IsSignInReturn(core.Source)) { ReturnToMusic(); return; }
+                if (NavigationPolicy.IsMusic(core.Source)) { signingIn = false; Close(); SignInChanged?.Invoke(false); }
                 if (Uri.TryCreate(core.Source, UriKind.Absolute, out var page) && page.Scheme == "https" && page.Host is "consent.youtube.com" or "consent.google.com")
                 {
                     try
@@ -110,7 +139,8 @@ public sealed class WebViewService
                     Loading?.Invoke(false, "");
                     return;
                 }
-                try { await Bridge.InjectAsync(settings.Current); Loading?.Invoke(false, ""); PageReady?.Invoke(); }
+                if (!NavigationPolicy.IsMusic(core.Source)) { Loading?.Invoke(false, ""); return; }
+                try { wasSignedIn = await core.ExecuteScriptAsync("window.ytcfg?.get?.('LOGGED_IN') === true") == "true"; await Bridge.InjectAsync(settings.Current); if (e.NavigationId != currentNavigation) return; Loading?.Invoke(false, ""); PageReady?.Invoke(); }
                 catch { Loading?.Invoke(true, "Couldn't initialize the player. Try again."); }
             };
             core.Navigate(LocalizedAddress("https://music.youtube.com"));

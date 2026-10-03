@@ -53,6 +53,7 @@ public sealed partial class MainWindow : Window
         ApplyNativeSettings();
         Volume.Value = settings.Current.Volume * 100;
         web = new(Browser, settings);
+        web.SignInChanged += active => { ReturnToMusicButton.Visibility = active ? Visibility.Visible : Visibility.Collapsed; if (active) { SidebarPlaylists.Children.Clear(); libraryStatus.Text = "Complete sign-in to see your playlists."; SidebarPlaylists.Children.Add(libraryStatus); } };
         Search.GotFocus += (_, _) => searchFocused = true;
         Search.LostFocus += (_, _) => searchFocused = false;
         searchTimer = DispatcherQueue.CreateTimer();
@@ -128,7 +129,7 @@ public sealed partial class MainWindow : Window
             mediaIntegration.Command += action => DispatcherQueue.TryEnqueue(() => _ = CommandAsync(action));
         }
         catch { }
-        Closed += (_, _) => { exiting = true; settingsWindow?.Close(); visualTimer?.Stop(); searchTimer.Stop(); volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); Browser.Close(); };
+        Closed += (_, _) => { exiting = true; settingsWindow?.Close(); visualTimer?.Stop(); searchTimer.Stop(); volumeSaveTimer.Stop(); settings.Save(); accentCancellation?.Cancel(); accents.Dispose(); mediaIntegration?.Dispose(); tray?.Dispose(); web.Close(); Browser.Close(); };
         AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.L, VirtualKeyModifiers.Control, () => Search.Focus(FocusState.Keyboard));
         AddShortcut(VirtualKey.M, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => _ = CommandAsync("mute"));
@@ -147,6 +148,7 @@ public sealed partial class MainWindow : Window
         Root.Loaded += async (_, _) => { await web.InitializeAsync(); await ShowWelcomeAsync(); if (settings.Current.StartMinimized && tray != null) AppWindow.Hide(); };
         updating = false;
     }
+    private void ReturnToMusic_Click(object sender, RoutedEventArgs e) => web.ReturnToMusic();
     private void AddShortcut(VirtualKey key, VirtualKeyModifiers modifiers, Action action)
     {
         var shortcut = new KeyboardAccelerator { Key = key, Modifiers = modifiers };

@@ -65,7 +65,7 @@ public sealed partial class MainWindow
     }
     private async Task RefreshPlaylistsAsync()
     {
-        if (libraryLoading || web?.Bridge == null || !settings.Current.ShowSidebarPlaylists) return;
+        if (libraryLoading || web?.Bridge == null || !web.IsMusicPage || !settings.Current.ShowSidebarPlaylists) return;
         libraryLoading = true;
         try
         {

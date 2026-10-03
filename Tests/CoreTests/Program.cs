@@ -14,3 +14,16 @@ Require(!NavigationPolicy.IsMusic("https://accounts.google.com/"));
 Require(!NavigationPolicy.IsInternal("https://music.youtube.com.evil.example/"));
 Require(!NavigationPolicy.CanOpenExternal("file:///test"));
 Console.WriteLine("PASS: artwork palette, neutral fallback, artwork origin restrictions, navigation isolation");
+
+Require(NavigationPolicy.IsAccount("https://accounts.google.com/v3/signin/challenge"));
+Require(NavigationPolicy.IsInternal("https://accounts.youtube.com/accounts/SetSID"));
+Require(NavigationPolicy.IsSignInReturn("https://www.youtube.com/?feature=signin"));
+Require(NavigationPolicy.IsSignInReturn("https://myaccount.google.com/"));
+Require(!NavigationPolicy.IsSignInReturn("https://accounts.google.com/v3/signin/challenge"));
+Require(!NavigationPolicy.IsSignInReturn("https://www.youtube.com/signin"));
+Require(!NavigationPolicy.IsSignInReturn("https://www.youtube.com/watch?v=test"));
+Require(!NavigationPolicy.IsAccount("https://accounts.google.com.evil.example/"));
+Require(!NavigationPolicy.IsSignInReturn("https://www.youtube.com.evil.example/"));
+Require(!NavigationPolicy.IsSignInReturn("http://www.youtube.com/"));
+Require(!NavigationPolicy.IsSignInReturn("https://www.youtube.com:444/"));
+Console.WriteLine("PASS: sign-in intermediates, return pages and origin restrictions");

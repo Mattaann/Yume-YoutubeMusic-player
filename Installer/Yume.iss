@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "1.2.8"
+  #define AppVersion "1.2.10"
 #endif
 #ifndef AppSource
   #error AppSource must point to the published Windows x64 application.
