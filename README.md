@@ -114,7 +114,6 @@ Queue content is limited to loaded website entries. Reordering/removing queue en
 A quick look at Yume's interface.
 
 <p align="center">
-  <img src="Assets/Yumeinstaller.png" width="32%" alt="Yume Home">
   <img src="Assets/Yumepreview.png" width="32%" alt="Yume Player">
 </p>
 
