@@ -11,7 +11,7 @@ Yume is a native Windows desktop music player that presents YouTube Music inside
 
 ## Download and run
 
-Download `Yume-1.2.10-Setup-x64.exe` from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
+Download Download [`Yume-1.2.10-Setup-x64.exe`](https://github.com/Mattaann/Yume/releases/download/v1.2.10-preview/Yume-1.2.10-Setup-x64.exe) and run it. from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
 
 Windows 10 version 2004 or later is required. The .NET runtime is bundled. Setup installs Microsoft Edge WebView2 Runtime when missing; this step needs an internet connection. Administrator privileges are not required.
 
