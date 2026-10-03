@@ -9,6 +9,44 @@ public sealed class WebViewService
     private readonly WebView2 view;
     private readonly SettingsService settings;
     private bool initializing;
+    private string appliedLanguage = "";
+    private string PreferredLanguage => settings.Current.Language == "Match system" ? Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? "en-US" : "en-US";
+    private string SiteLanguage => PreferredLanguage == "en-US" ? "en" : PreferredLanguage.StartsWith("sv", StringComparison.OrdinalIgnoreCase) ? "sv" : PreferredLanguage;
+    private string LocalizedAddress(string address)
+    {
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Host != "music.youtube.com") return address;
+        var builder = new UriBuilder(uri);
+        var query = builder.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries).Where(part => !part.StartsWith("hl=", StringComparison.OrdinalIgnoreCase));
+        builder.Query = string.Join("&", query.Append("hl=" + Uri.EscapeDataString(SiteLanguage)));
+        return builder.Uri.AbsoluteUri;
+    }
+    public async Task ApplyLanguageAsync()
+    {
+        if (view.CoreWebView2 == null || appliedLanguage == PreferredLanguage) return;
+        await UpdateLanguageCookieAsync();
+        appliedLanguage = PreferredLanguage;
+        view.CoreWebView2.Navigate(LocalizedAddress(view.CoreWebView2.Source));
+    }
+    private async Task UpdateLanguageCookieAsync()
+    {
+        var manager = view.CoreWebView2.CookieManager;
+        var cookies = await manager.GetCookiesAsync("https://music.youtube.com");
+        var preferences = cookies.Where(cookie => cookie.Name == "PREF").ToList();
+        if (preferences.Count == 0)
+        {
+            var cookie = manager.CreateCookie("PREF", "", ".youtube.com", "/");
+            cookie.IsSecure = true;
+            cookie.Expires = DateTimeOffset.UtcNow.AddYears(1).ToUnixTimeSeconds();
+            preferences.Add(cookie);
+        }
+        foreach (var cookie in preferences)
+        {
+            cookie.Value = string.Join("&", cookie.Value.Split('&', StringSplitOptions.RemoveEmptyEntries)
+                .Where(part => !part.StartsWith("hl=", StringComparison.OrdinalIgnoreCase))
+                .Append("hl=" + Uri.EscapeDataString(SiteLanguage)));
+            manager.AddOrUpdateCookie(cookie);
+        }
+    }
     private string? volumeScriptId;
     private readonly SemaphoreSlim volumeScriptLock = new(1, 1);
     public YouTubeMusicBridge? Bridge { get; private set; }
@@ -22,7 +60,9 @@ public sealed class WebViewService
         initializing = true;
         try
         {
-            var environment = await CoreWebView2Environment.CreateWithOptionsAsync(null, Path.Combine(SettingsService.DataDirectory, "WebView2"), null);
+            appliedLanguage = PreferredLanguage;
+            var options = new CoreWebView2EnvironmentOptions { Language = PreferredLanguage };
+            var environment = await CoreWebView2Environment.CreateWithOptionsAsync(null, Path.Combine(SettingsService.DataDirectory, "WebView2"), options);
             await view.EnsureCoreWebView2Async(environment);
             view.DefaultBackgroundColor = Microsoft.UI.Colors.Transparent;
             var core = view.CoreWebView2;
@@ -31,10 +71,13 @@ public sealed class WebViewService
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.IsPasswordAutosaveEnabled = false;
             core.Settings.IsGeneralAutofillEnabled = false;
+            await UpdateLanguageCookieAsync();
             await UpdateVolumePreferenceAsync();
             core.NavigationStarting += (_, e) =>
             {
                 if (!NavigationPolicy.IsInternal(e.Uri)) { e.Cancel = true; OpenExternal(e.Uri); return; }
+                var localized = LocalizedAddress(e.Uri);
+                if (localized != e.Uri) { e.Cancel = true; core.Navigate(localized); return; }
                 Loading?.Invoke(true, "Loading your music...");
             };
             core.NewWindowRequested += (_, e) =>
@@ -70,7 +113,7 @@ public sealed class WebViewService
                 try { await Bridge.InjectAsync(settings.Current); Loading?.Invoke(false, ""); PageReady?.Invoke(); }
                 catch { Loading?.Invoke(true, "Couldn't initialize the player. Try again."); }
             };
-            core.Navigate("https://music.youtube.com");
+            core.Navigate(LocalizedAddress("https://music.youtube.com"));
         }
         catch { Loading?.Invoke(true, "Couldn't start WebView2. Install Microsoft Edge WebView2 Runtime, then restart."); }
         finally { initializing = false; }

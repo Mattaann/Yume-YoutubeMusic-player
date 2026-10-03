@@ -109,7 +109,7 @@ public sealed partial class MainWindow : Window
                 else _ = CommandAsync(action);
             });
         }
-        catch { settings.Current.MinimizeToTray = false; }
+        catch { }
         AppWindow.Closing += (_, args) =>
         {
             if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Restored })
@@ -120,7 +120,7 @@ public sealed partial class MainWindow : Window
                 settings.Current.Y = AppWindow.Position.Y;
             }
             settings.Save();
-            if (!exiting && settings.Current.MinimizeToTray && tray != null) { args.Cancel = true; AppWindow.Hide(); }
+            if (!exiting) { args.Cancel = true; if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.Minimize(); }
         };
         try
         {
@@ -378,7 +378,7 @@ public sealed partial class MainWindow : Window
         PlayButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(color);
         ApplyAccent();
     }
-    private void RestoreMain() { AppWindow.Show(); Activate(); }
+    public void RestoreMain() { AppWindow.Show(); if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter) presenter.Restore(); Activate(); }
     private void Queue_Click(object sender, RoutedEventArgs e) => _ = SetPanelAsync("queue");
     private void Lyrics_Click(object sender, RoutedEventArgs e) => _ = SetPanelAsync("lyrics");
     private void ClosePanel_Click(object sender, RoutedEventArgs e) => _ = SetPanelAsync("");
@@ -432,6 +432,7 @@ public sealed partial class MainWindow : Window
             try { mediaIntegration?.Update(playback, settings.Current.WindowsMediaIntegration); } catch { }
             if (web.Bridge != null) { await web.Bridge.ApplyStylesAsync(settings.Current); await web.Bridge.ApplyEqualizerAsync(settings.Current); }
             await web.UpdateVolumePreferenceAsync();
+            await web.ApplyLanguageAsync();
         }, async () =>
         {
             RestoreMain();

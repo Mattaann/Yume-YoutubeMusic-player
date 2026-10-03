@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory=$true)][string]$Bootstrapper,
     [string]$Compiler = 'ISCC.exe',
     [string]$OutputDirectory = (Join-Path $PSScriptRoot '..\..'),
-    [string]$Version = '1.2.6'
+    [string]$Version = '1.2.8'
 )
 $ErrorActionPreference = 'Stop'
 $app = (Resolve-Path -LiteralPath $AppSource).Path

@@ -17,7 +17,7 @@ public sealed class Preferences
     public bool HideLikes { get; set; } = true;
     public bool ShowVideo { get; set; }
     public bool Compact { get; set; }
-    public bool MinimizeToTray { get; set; } = true;
+    public string Language { get; set; } = "English";
     public bool RememberVolume { get; set; } = true;
     public bool MediaKeys { get; set; } = true;
     public double Volume { get; set; } = 0.7;

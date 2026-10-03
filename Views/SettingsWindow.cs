@@ -48,7 +48,9 @@ public sealed class SettingsWindow : Window
             tabs.Add(tab); navigation.Children.Add(tab);
         }
         var p = settings.Current;
-        AddToggle("General", "tray", "Close to system tray", p.MinimizeToTray, hasTray);
+        var language = new ComboBox { Header = "Language", ItemsSource = new[] { "English", "Match system" }, SelectedItem = p.Language, HorizontalAlignment = HorizontalAlignment.Stretch };
+        pages["General"].Children.Add(language);
+        pages["General"].Children.Add(Note("Language changes reload YouTube Music. Browser controls use the new language after restarting Yume. App text falls back to English where translations are unavailable. Closing the main window always minimizes it."));
         AddToggle("General", "minimized", "Start in system tray", p.StartMinimized, hasTray);
         AddToggle("General", "top", "Always on top", p.AlwaysOnTop);
         var startupEnabled = StartupService.IsEnabled();
@@ -116,7 +118,7 @@ public sealed class SettingsWindow : Window
             try
             {
                 if (On("startup") != startupEnabled) { StartupService.SetEnabled(On("startup")); startupEnabled = On("startup"); }
-                p.MinimizeToTray = On("tray"); p.StartMinimized = On("minimized"); p.AlwaysOnTop = On("top");
+                p.Language = language.SelectedItem as string ?? "English"; p.StartMinimized = On("minimized"); p.AlwaysOnTop = On("top");
                 p.Theme = theme.SelectedItem as string ?? "Yume"; p.VisualTheme = On("visual"); p.ArtworkAccent = On("accent");
                 p.ShowSidebarPlaylists = On("sidebarPlaylists"); p.ShowLikedMusic = On("likedMusic"); p.ShowAlbums = On("albums"); p.ShowArtists = On("artists"); p.ShowPodcasts = On("podcasts");
                 p.Animations = On("animation"); p.Compact = On("compact"); p.HideLikes = On("likes"); p.ShowVideo = On("video");

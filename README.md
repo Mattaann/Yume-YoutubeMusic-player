@@ -6,7 +6,7 @@ Yume is a native Windows desktop music player that presents YouTube Music inside
 
 ## Download and run
 
-Download `Yume-1.2.6-Setup-x64.exe` from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
+Download `Yume-1.2.8-Setup-x64.exe` from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
 
 Windows 10 version 2004 or later is required. The .NET runtime is bundled. Setup installs Microsoft Edge WebView2 Runtime when missing; this step needs an internet connection. Administrator privileges are not required.
 
@@ -40,7 +40,9 @@ The Windows x64 ZIP is also available for portable use: extract the entire folde
 - First-run welcome dialog and Contact link to the project owner's GitHub profile.
 - Automatically chooses Reject all on supported Google/YouTube consent pages in English or Swedish. If no matching button is found, the consent page remains available for a manual choice.
 - General, Appearance and Sound settings. Appearance groups Theme, Show in sidebar, Hide and Content controls.
-- Optional sidebar sections, close to tray, start in tray, always on top and Windows startup.
+- Optional sidebar sections, start in tray, always on top and Windows startup.
+- Closing the main window always minimizes it to the taskbar. Launching Yume again restores the existing instance; use Exit in the tray menu to quit.
+- English is the default language. General settings offers English or Match system for YouTube Music, with English fallback for untranslated native app text. Changing the language reloads the website; restart to update browser controls.
 - Media keys, Windows media information, saved window placement and persistent local sign-in.
 
 ## Shortcuts
@@ -94,7 +96,7 @@ Install Inno Setup 7 and download Microsoft's signed WebView2 Evergreen Bootstra
 ./Installer/build-installer.ps1 -AppSource ../Yume-portable -Bootstrapper ./MicrosoftEdgeWebview2Setup.exe -Compiler ISCC.exe -OutputDirectory ../release
 ```
 
-The script verifies the bootstrapper signature and rejects known profile or diagnostic data in the app folder. Installer sources are in `Installer` on the main branch; the original 1.2.6 source release archive contains the application sources before installer packaging was added.
+The script verifies the bootstrapper signature and rejects known profile or diagnostic data in the app folder. Installer sources are included in the source release archive.
 
 ## Limitations
 

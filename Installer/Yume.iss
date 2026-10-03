@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "1.2.6"
+  #define AppVersion "1.2.8"
 #endif
 #ifndef AppSource
   #error AppSource must point to the published Windows x64 application.
@@ -31,6 +31,8 @@ UninstallDisplayIcon={app}\Yume.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+LanguageDetectionMethod=none
+UsePreviousLanguage=no
 CloseApplications=yes
 RestartApplications=no
 VersionInfoDescription=Yume Setup

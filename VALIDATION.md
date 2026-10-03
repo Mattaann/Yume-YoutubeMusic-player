@@ -1,5 +1,18 @@
 # Validation
 
+## Version 1.2.8 test build
+
+- Uses the site's English language code and updates only the language field in the local YouTube PREF cookie, preserving other preferences.
+- Live language check confirmed both the document language and YouTube Music configuration are English. The temporary check recorded booleans only and is not included in the test build.
+- Release build and all nine JavaScript suites pass. Match system uses the Windows user's preferred language list.
+
+## Version 1.2.7 test build
+
+- Windows x64 Release build, nine JavaScript suites and core C# checks pass.
+- Live startup test succeeds. Closing the main window keeps the process running; launching the executable again exits the second process and retains one instance.
+- English is selected by default. Installer source defaults to English without reusing a previous setup language; no new installer was built.
+- Manual verification remains for account-specific YouTube Music language, Match system and repinning the new executable to the taskbar.
+
 ## Version 1.2.6
 
 - Windows x64 self-contained Release build succeeds, including the application icon, compiled XAML and resource index.
@@ -27,3 +40,10 @@ Tests use synthetic data. Releases exclude diagnostic builds, profiles, credenti
 - Silent uninstall succeeds and removes the test executable and uninstall registration.
 - The test uses an existing WebView2 runtime. The prerequisite bootstrapper has a valid Microsoft signature.
 - Setup does not bundle user profiles or settings and does not remove the separate application-data directory.
+
+## Installer 1.2.8
+
+- English is the default setup language, including upgrades.
+- Silent installation and uninstall pass; all 470 payload files match by SHA-256.
+- Source, application payload and Git history privacy scan reports no findings.
+
