@@ -1,6 +1,11 @@
 # Yume
 
-![Yume logo](Assets/Yume.png)
+<p align="center">
+  
+  <img src="Assets/Yumepreview.png" width="80%" alt="Yume Player">
+  <img src="Assets/Yume.png" width="20%" alt="Yume Home">
+</p>
+
 
 Yume is a native Windows desktop music player that presents YouTube Music inside a focused interface. Browse the YouTube Music catalog, sign in to your own Google account, and control playback from a native bottom bar. Built with C#, WinUI 3 and Microsoft WebView2.
 
