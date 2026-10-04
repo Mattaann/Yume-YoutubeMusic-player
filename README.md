@@ -7,9 +7,19 @@
 </p>
 
 
-Yume is a native Windows desktop music player that presents YouTube Music inside a focused interface. Browse the YouTube Music catalog, sign in to your own Google account, and control playback from a native bottom bar. Built with C#, WinUI 3 and Microsoft WebView2.
+Yume is a desktop music player for Windows and macOS that presents YouTube Music inside a focused interface. Browse the catalog, sign in to your Google account, and control playback from native desktop controls. The Windows client uses C#, WinUI 3 and WebView2; the macOS preview uses SwiftUI and WKWebView.
 
-## Download and run
+## macOS download
+
+[**Download yume-0.5.3-macos.dmg**](https://github.com/Mattaann/Yume/releases/download/v0.5.3-macos/yume-0.5.3-macos.dmg)
+
+Requires macOS 13 or later on Apple silicon (M1 or newer). Intel Macs are not supported by this build. Quit Yume, open the disk image and drag the app to Applications.
+
+Version 0.5.3 adds cover artwork to macOS Control Center, alongside track information and playback controls. The preview also includes the Yume theme, rounded app icon, queue, lyrics, graphical equalizer, menu-bar controls and English/system-language selection.
+
+This preview is ad-hoc signed and is not notarized by Apple; macOS may block its first launch. The package contains no account or browser profile.
+
+## Windows download and run
 
 Download Download [`Yume-1.2.10-Setup-x64.exe`](https://github.com/Mattaann/Yume/releases/download/v1.2.10-preview/Yume-1.2.10-Setup-x64.exe) and run it. from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
 
