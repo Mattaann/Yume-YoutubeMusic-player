@@ -19,9 +19,11 @@ Version 0.5.3 adds cover artwork to macOS Control Center, alongside track inform
 
 This preview is ad-hoc signed and is not notarized by Apple; macOS may block its first launch. The package contains no account or browser profile.
 
-## Windows download and run
+## Windows download 
 
-Download Download [`Yume-1.2.10-Setup-x64.exe`](https://github.com/Mattaann/Yume/releases/download/v1.2.10-preview/Yume-1.2.10-Setup-x64.exe) and run it. from this repository's Releases page and run it. Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
+[**Download Yume-1.2.10-Setup-x64.exe**](https://github.com/Mattaann/Yume/releases/download/v1.2.10-preview/Yume-1.2.10-Setup-x64.exe)
+
+Setup installs Yume for the current Windows user, adds a Start menu shortcut and offers an optional desktop shortcut. Uninstall through Windows Settings. Updates and uninstall preserve your local settings and browser profile.
 
 Windows 10 version 2004 or later is required. The .NET runtime is bundled. Setup installs Microsoft Edge WebView2 Runtime when missing; this step needs an internet connection. Administrator privileges are not required.
 
