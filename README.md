@@ -11,13 +11,15 @@ Yume is a desktop music player for Windows and macOS that presents YouTube Music
 
 ## macOS download
 
-[**Download yume-0.5.3-macos.dmg**](https://github.com/Mattaann/Yume/releases/download/v0.5.3-macos/yume-0.5.3-macos.dmg)
+[**Download yume-0.5.10-macos.dmg**](https://github.com/Mattaann/Yume/releases/download/v0.5.10-macos/yume-0.5.10-macos.dmg)
 
 Requires macOS 13 or later on Apple silicon (M1 or newer). Intel Macs are not supported by this build. Quit Yume, open the disk image and drag the app to Applications.
 
-Version 0.5.3 adds cover artwork to macOS Control Center, alongside track information and playback controls. The preview also includes the Yume theme, rounded app icon, queue, lyrics, graphical equalizer, menu-bar controls and English/system-language selection.
+Version 0.5.10 fixes Library and Downloads tab positioning, keeps content below the tab bar, and removes the empty-state background that obscured the Yume theme. It also includes the sign-in window improvements added since 0.5.3.
 
-This preview is ad-hoc signed and is not notarized by Apple; macOS may block its first launch. The package contains no account or browser profile.
+The macOS client includes Control Center artwork and playback controls, queue, lyrics, a six-band equalizer, menu-bar controls and English/system-language selection.
+
+This build is ad-hoc signed and is not notarized by Apple; macOS may block its first launch. The package contains no account or browser profile.
 
 ## Windows download 
 
